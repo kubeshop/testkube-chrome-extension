@@ -1,0 +1,191 @@
+/* Injected into the document head (light DOM). Classes are prefixed tk-gh- to
+   avoid clashing with GitHub. Colors use Primer CSS variables (with fallbacks)
+   so the widget follows GitHub's light/dark theme. */
+
+.tk-gh-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--fgColor-muted, #656d76);
+  cursor: default;
+}
+
+.tk-gh-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tk-gh-heading-count {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 6px;
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  text-align: center;
+  color: var(--fgColor-muted, #656d76);
+  background-color: var(--bgColor-neutral-muted, rgba(175, 184, 193, 0.2));
+  border-radius: 2em;
+}
+
+.tk-gh-count {
+  font-weight: 600;
+  color: var(--fgColor-default, inherit);
+}
+
+.tk-gh-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.tk-gh-octicon {
+  display: block;
+}
+
+.tk-gh-icon--passed {
+  color: var(--fgColor-success, #1a7f37);
+}
+
+.tk-gh-icon--failed {
+  color: var(--fgColor-danger, #cf222e);
+}
+
+.tk-gh-icon--aborted {
+  color: var(--fgColor-severe, #bc4c00);
+}
+
+.tk-gh-icon--canceled {
+  color: var(--fgColor-muted, #6e7781);
+}
+
+.tk-gh-icon--running {
+  color: var(--fgColor-attention, #9a6700);
+}
+
+.tk-gh-icon--other {
+  color: var(--fgColor-muted, #6e7781);
+}
+
+.tk-gh-icon--unknown {
+  color: var(--fgColor-muted, #8c959f);
+}
+
+.tk-gh-stat--interactive {
+  cursor: default;
+}
+
+.tk-gh-stat:focus-visible {
+  outline: 2px solid var(--fgColor-accent, #0969da);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Mounted on document.body and positioned via JS so it is never clipped. */
+.tk-gh-popover {
+  display: none;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: max-content;
+  min-width: 300px;
+  max-width: 520px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--borderColor-default, #d0d7de);
+  border-radius: 6px;
+  background: var(--bgColor-default, #ffffff);
+  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.2);
+  z-index: 2147483000;
+}
+
+.tk-gh-popover-title {
+  padding: 4px 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fgColor-muted, #656d76);
+}
+
+.tk-gh-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tk-gh-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.tk-gh-item:hover {
+  background: var(--bgColor-muted, rgba(140, 149, 159, 0.12));
+}
+
+.tk-gh-link {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fgColor-accent, #0969da);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.tk-gh-link:hover {
+  text-decoration: underline;
+}
+
+.tk-gh-item-status {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--fgColor-muted, #656d76);
+}
+
+.tk-gh-notice-detail {
+  font-size: 12px;
+  color: var(--fgColor-muted, #656d76);
+}
+
+.tk-gh-dashboard-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fgColor-accent, #0969da);
+  text-decoration: none;
+}
+
+.tk-gh-dashboard-link:hover {
+  text-decoration: underline;
+}
+
+/* Floating fallback when the Releases section cannot be located. */
+.tk-gh-floating {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  padding: 8px 12px;
+  border: 1px solid var(--borderColor-default, #d0d7de);
+  border-radius: 999px;
+  background: var(--bgColor-default, #ffffff);
+  box-shadow: 0 4px 14px rgba(31, 35, 40, 0.25);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  color: var(--fgColor-default, #1f2328);
+}
+
+.tk-gh-floating .tk-gh-heading {
+  font-weight: 600;
+  margin-right: 8px;
+}

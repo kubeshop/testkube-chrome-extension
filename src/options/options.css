@@ -1,0 +1,118 @@
+:root {
+  color-scheme: light dark;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  background: Canvas;
+  color: CanvasText;
+}
+
+.card {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  margin: 0 0 20px;
+  opacity: 0.75;
+  font-size: 13px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid rgba(140, 149, 159, 0.5);
+  border-radius: 6px;
+  background: Field;
+  color: FieldText;
+}
+
+.field input:focus {
+  outline: 2px solid #0969da;
+  outline-offset: -1px;
+  border-color: #0969da;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid rgba(140, 149, 159, 0.5);
+  border-radius: 6px;
+  background: ButtonFace;
+  color: ButtonText;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: #1f883d;
+  border-color: #1f883d;
+  color: #fff;
+}
+
+.hint {
+  font-size: 12px;
+}
+
+.hint.ok {
+  color: #1a7f37;
+}
+
+.result {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.result.ok {
+  background: rgba(31, 136, 61, 0.12);
+  color: #1a7f37;
+}
+
+.result.error {
+  background: rgba(207, 34, 46, 0.12);
+  color: #cf222e;
+  word-break: break-word;
+}
+
+.footnote {
+  margin-top: 20px;
+  font-size: 11px;
+  opacity: 0.6;
+}
