@@ -1,4 +1,4 @@
-import { parseGithubRepoFromPath, type RepoRef } from '../lib/match';
+import { parseGithubRepoFromPath, repoMatchesFilters, type RepoRef } from '../lib/match';
 import { log, warn } from '../lib/log';
 import { getSettings } from '../lib/storage';
 import type { GetMatchesRequest, MatchesResponse } from '../lib/messaging';
@@ -12,6 +12,7 @@ let pending = false;
 let scheduled = false;
 let refreshTimer: ReturnType<typeof setInterval> | undefined;
 let dashboardBaseUrl = '';
+let repoFilters: string[] = [];
 
 function loadingDashboardUrl(): string | undefined {
   const base = dashboardBaseUrl.replace(/\/+$/, '');
@@ -32,7 +33,7 @@ function keyFor(ref: RepoRef): string {
 
 async function update(force = false): Promise<void> {
   const ref = parseGithubRepoFromPath(location.pathname);
-  if (!ref || !isCodeTab(location.pathname)) {
+  if (!ref || !isCodeTab(location.pathname) || !repoMatchesFilters(ref, repoFilters)) {
     removeWidget();
     currentKey = '';
     lastResponse = null;
@@ -124,6 +125,7 @@ function applyRefreshInterval(seconds: number): void {
 // the auto-refresh interval are available.
 void getSettings().then((s) => {
   dashboardBaseUrl = s.dashboardBaseUrl;
+  repoFilters = s.repoFilters;
   applyRefreshInterval(s.refreshIntervalSeconds);
   void update();
 });
@@ -136,5 +138,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
   if (changes.dashboardBaseUrl) {
     dashboardBaseUrl = String(changes.dashboardBaseUrl.newValue ?? '');
+  }
+  if (changes.repoFilters) {
+    repoFilters = Array.isArray(changes.repoFilters.newValue)
+      ? (changes.repoFilters.newValue as string[])
+      : [];
+    // Re-evaluate the current page against the updated allowlist.
+    void update();
   }
 });

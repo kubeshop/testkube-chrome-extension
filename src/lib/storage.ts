@@ -5,11 +5,12 @@ export const DEFAULT_SETTINGS: Settings = {
   dashboardBaseUrl: 'https://app.testkube.io',
   apiToken: '',
   refreshIntervalSeconds: 0,
+  repoFilters: [],
 };
 
 // Non-secret settings live in storage.sync; the API token lives in storage.local
 // so it is not synced across the user's browsers.
-const SYNC_KEYS = ['apiBaseUrl', 'dashboardBaseUrl', 'refreshIntervalSeconds'] as const;
+const SYNC_KEYS = ['apiBaseUrl', 'dashboardBaseUrl', 'refreshIntervalSeconds', 'repoFilters'] as const;
 const TOKEN_KEY = 'apiToken';
 
 export async function getSettings(): Promise<Settings> {
@@ -30,6 +31,7 @@ export async function saveSettings(s: Settings): Promise<void> {
       apiBaseUrl: s.apiBaseUrl.trim(),
       dashboardBaseUrl: s.dashboardBaseUrl.trim(),
       refreshIntervalSeconds: Math.max(0, Math.floor(s.refreshIntervalSeconds) || 0),
+      repoFilters: s.repoFilters.map((f) => f.trim()).filter(Boolean),
     }),
     chrome.storage.local.set({ [TOKEN_KEY]: s.apiToken.trim() }),
   ]);

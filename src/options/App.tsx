@@ -99,6 +99,21 @@ export function App() {
       </label>
 
       <label className="field">
+        <span className="field-label">Active on repositories (one wildcard per line, empty = all)</span>
+        <textarea
+          rows={4}
+          value={settings.repoFilters.join('\n')}
+          placeholder={'kubeshop/*\n*/testkube*'}
+          spellCheck={false}
+          onChange={(e) => update({ repoFilters: e.target.value.split('\n') })}
+        />
+        <span className="field-hint">
+          Matched case-insensitively against <code>owner/repo</code>. Use <code>*</code> for any
+          characters and <code>?</code> for a single character.
+        </span>
+      </label>
+
+      <label className="field">
         <span className="field-label">API token</span>
         <input
           type="password"

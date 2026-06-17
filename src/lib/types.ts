@@ -8,6 +8,9 @@ export interface Settings {
   apiToken: string;
   // Auto-refresh interval in seconds while viewing a repo; 0 disables polling.
   refreshIntervalSeconds: number;
+  // Allowlist of wildcard patterns matched (case-insensitively) against the
+  // "owner/repo" of the current page. Empty means active on all repos.
+  repoFilters: string[];
 }
 
 // Control-plane discovery shapes (subset). The token is tied to a single

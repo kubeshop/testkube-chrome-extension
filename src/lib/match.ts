@@ -12,6 +12,25 @@ function stripGitSuffix(s: string): string {
   return s.replace(/\.git$/i, '');
 }
 
+// Convert a wildcard pattern (`*` = any run of chars, `?` = single char) into a
+// case-insensitive, fully-anchored RegExp. All other regex metacharacters are
+// escaped so patterns behave like globs, not regexes.
+function wildcardToRegExp(pattern: string): RegExp {
+  const escaped = pattern.trim().replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  const body = escaped.replace(/\*/g, '.*').replace(/\?/g, '.');
+  return new RegExp(`^${body}$`, 'i');
+}
+
+// Whether the repo is allowed by the user's allowlist of wildcard patterns,
+// matched case-insensitively against the full "owner/repo" string. An empty
+// list means "active on all repos".
+export function repoMatchesFilters(ref: RepoRef, filters: string[]): boolean {
+  const patterns = filters.map((f) => f.trim()).filter(Boolean);
+  if (patterns.length === 0) return true;
+  const target = `${ref.owner}/${ref.repo}`;
+  return patterns.some((p) => wildcardToRegExp(p).test(target));
+}
+
 // GitHub top-level path segments that are not repository owners.
 const RESERVED_OWNERS = new Set([
   'orgs',

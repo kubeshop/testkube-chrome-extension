@@ -39,7 +39,8 @@ h1 {
   margin-bottom: 4px;
 }
 
-.field input {
+.field input,
+.field textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
@@ -50,10 +51,29 @@ h1 {
   color: FieldText;
 }
 
-.field input:focus {
+.field textarea {
+  resize: vertical;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  line-height: 1.5;
+}
+
+.field input:focus,
+.field textarea:focus {
   outline: 2px solid #0969da;
   outline-offset: -1px;
   border-color: #0969da;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+.field-hint code {
+  font-size: 11px;
 }
 
 .actions {

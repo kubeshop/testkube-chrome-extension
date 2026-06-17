@@ -107,6 +107,20 @@ or in a step) normalizes to the same `github.com/owner/repo` as the page you are
 normalization handles `https://`, `ssh://`, `git@host:owner/repo.git`, and trailing `.git`. See
 [`src/lib/match.ts`](src/lib/match.ts).
 
+## Repo allowlist (where the extension is active)
+
+The optional **Active on repositories** setting is an allowlist of wildcard patterns. The content
+script (`update()` in [`src/content/content-script.ts`](src/content/content-script.ts)) calls
+`repoMatchesFilters()` before querying: if the current `owner/repo` doesn't match, it removes any
+widget and returns without messaging the service worker — so no discovery or workflow API calls are
+made. An empty list means "active on all repos". `repoMatchesFilters` (in
+[`src/lib/match.ts`](src/lib/match.ts)) matches case-insensitively against the full `owner/repo`,
+treating `*` as any run of characters and `?` as a single character (all other regex metacharacters
+are escaped). Changes to the setting are applied live via the `chrome.storage.onChanged` listener.
+
+Note: this gates the API queries, not the content-script injection — the script still loads on all
+of `github.com/*` per the static `content_scripts` match in `manifest.config.ts`.
+
 ## Caching & refresh
 
 - **Discovery cache** — org + environment list.
@@ -122,12 +136,13 @@ bypasses both caches.
 
 Defaults and storage live in [`src/lib/storage.ts`](src/lib/storage.ts):
 
-| Setting               | Default                   | Storage                |
-| --------------------- | ------------------------- | ---------------------- |
-| API base URL          | `https://api.testkube.io` | `chrome.storage.sync`  |
-| Dashboard base URL    | `https://app.testkube.io` | `chrome.storage.sync`  |
-| Auto-refresh interval | `0` (off)                 | `chrome.storage.sync`  |
-| API token             | —                         | `chrome.storage.local` |
+| Setting                | Default                   | Storage                |
+| ---------------------- | ------------------------- | ---------------------- |
+| API base URL           | `https://api.testkube.io` | `chrome.storage.sync`  |
+| Dashboard base URL     | `https://app.testkube.io` | `chrome.storage.sync`  |
+| Active on repositories | `[]` (all repos)          | `chrome.storage.sync`  |
+| Auto-refresh interval  | `0` (off)                 | `chrome.storage.sync`  |
+| API token              | —                         | `chrome.storage.local` |
 
 ### Targeting a different control plane
 

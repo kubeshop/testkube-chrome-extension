@@ -66,12 +66,19 @@ If no workflows reference the repo, the section is not shown.
 
 All configuration lives in the options page:
 
-| Setting               | Default                   | Notes                                                    |
-| --------------------- | ------------------------- | -------------------------------------------------------- |
-| API base URL          | `https://api.testkube.io` | Change for self-managed control planes                   |
-| Dashboard base URL    | `https://app.testkube.io` | Used to build deep links                                 |
-| Auto-refresh interval | `0` (off)                 | Seconds between automatic refreshes while viewing a repo |
-| API token             | —                         | Stored locally in the browser, never synced              |
+| Setting               | Default                   | Notes                                                                                    |
+| --------------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
+| API base URL          | `https://api.testkube.io` | Change for self-managed control planes                                                   |
+| Dashboard base URL    | `https://app.testkube.io` | Used to build deep links                                                                 |
+| Active on repositories | (empty = all repos)      | Allowlist of wildcard patterns matched against `owner/repo`; limits where it queries     |
+| Auto-refresh interval | `0` (off)                 | Seconds between automatic refreshes while viewing a repo                                 |
+| API token             | —                         | Stored locally in the browser, never synced                                              |
+
+**Active on repositories** lets you restrict the extension to specific repos so it doesn't query
+your Testkube workflows on every GitHub page. Enter one wildcard pattern per line, matched
+case-insensitively against the full `owner/repo` (e.g. `kubeshop/*`, `*/testkube*`, `my-org/my-repo`).
+`*` matches any run of characters and `?` matches a single character. Leave it empty to stay active
+on all repositories.
 
 If you point the API base URL at a different host, that origin must also be allowed in the
 extension's host permissions — see [DEVELOPMENT.md](DEVELOPMENT.md).
