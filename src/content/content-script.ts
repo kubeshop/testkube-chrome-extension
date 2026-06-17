@@ -1,4 +1,4 @@
-import { parseGithubRepoFromPath, repoMatchesFilters, type RepoRef } from '../lib/match';
+import { parseGithubRepoFromPath, repoMatchesPatterns, type RepoRef } from '../lib/match';
 import { log, warn } from '../lib/log';
 import { getSettings } from '../lib/storage';
 import type { GetMatchesRequest, MatchesResponse } from '../lib/messaging';
@@ -33,7 +33,7 @@ function keyFor(ref: RepoRef): string {
 
 async function update(force = false): Promise<void> {
   const ref = parseGithubRepoFromPath(location.pathname);
-  if (!ref || !isCodeTab(location.pathname) || !repoMatchesFilters(ref, repoFilters)) {
+  if (!ref || !isCodeTab(location.pathname)) {
     removeWidget();
     currentKey = '';
     lastResponse = null;
@@ -42,6 +42,11 @@ async function update(force = false): Promise<void> {
   }
 
   const key = keyFor(ref);
+  // A repo is "active" automatically when Testkube has a workflow for it (known
+  // only after querying), OR when it explicitly matches a manual pattern. Manual
+  // matches are known up front, so we can show the loading state immediately;
+  // other repos are queried silently and only render if a workflow exists.
+  const manual = repoMatchesPatterns(ref, repoFilters);
 
   // Same repo (and not a forced refresh): only (re)render if GitHub removed us.
   if (!force && key === currentKey) {
@@ -49,7 +54,7 @@ async function update(force = false): Promise<void> {
     if (lastResponse) {
       log('re-rendering widget for', key, '(host was removed)');
       renderWidget(lastResponse);
-    } else if (pending) {
+    } else if (pending && manual) {
       renderLoading(loadingDashboardUrl());
     }
     return;
@@ -57,10 +62,11 @@ async function update(force = false): Promise<void> {
 
   currentKey = key;
   if (!force) {
-    // First load for this repo: show a loading placeholder while we query.
     lastResponse = null;
     pending = true;
-    renderLoading(loadingDashboardUrl());
+    // Only flash a loading placeholder for repos we already know are active.
+    if (manual) renderLoading(loadingDashboardUrl());
+    else removeWidget();
   }
   log('detected repo', key, force ? '- forcing refresh' : '- requesting matches from service worker');
 
@@ -81,8 +87,16 @@ async function update(force = false): Promise<void> {
   const now = parseGithubRepoFromPath(location.pathname);
   if (!now || keyFor(now) !== key) return;
 
-  lastResponse = res;
-  renderWidget(res);
+  // Render when Testkube has workflows for the repo (auto-active) or the user
+  // explicitly allowlisted it (shows the create-a-workflow empty state).
+  const hasMatches = res.configured && res.ok && res.matches.length > 0;
+  if (hasMatches || manual) {
+    lastResponse = res;
+    renderWidget(res);
+  } else {
+    lastResponse = null;
+    removeWidget();
+  }
 }
 
 function scheduleUpdate(): void {
@@ -115,7 +129,8 @@ function applyRefreshInterval(seconds: number): void {
   }
   if (seconds > 0) {
     refreshTimer = setInterval(() => {
-      if (currentKey) void update(true);
+      // Only refresh while a panel is actually showing (skip inactive repos).
+      if (currentKey && document.getElementById(HOST_ID)) void update(true);
     }, seconds * 1000);
     log('auto-refresh every', seconds, 'seconds');
   }

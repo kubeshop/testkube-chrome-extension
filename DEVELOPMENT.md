@@ -84,8 +84,12 @@ GitHub repo page ──(owner/repo)──▶ content script
   minutes; manual refresh and auto-refresh bypass the cache.
 - The **panel (widget)** groups matches by status (passed, failed, aborted, cancelled, running),
   each with a hover popover listing that status's workflows. An environment dropdown filters to a
-  single environment when matches span more than one, and a refresh icon re-queries on demand.
-- The **options page** stores the base URLs, the auto-refresh interval, and the API token only.
+  single environment when matches span more than one, and a refresh icon re-queries on demand. When
+  there are no matches (but the repo is configured/reachable and allowed by the repo allowlist), it
+  renders an empty state encouraging the user to create a Test Workflow, with links to the docs and
+  the dashboard.
+- The **options page** stores the base URLs, the auto-refresh interval, the repo allowlist, and the
+  API token only.
 
 ### Deep links
 
@@ -107,19 +111,34 @@ or in a step) normalizes to the same `github.com/owner/repo` as the page you are
 normalization handles `https://`, `ssh://`, `git@host:owner/repo.git`, and trailing `.git`. See
 [`src/lib/match.ts`](src/lib/match.ts).
 
-## Repo allowlist (where the extension is active)
+## Where the extension is active (auto-detection + manual allowlist)
 
-The optional **Active on repositories** setting is an allowlist of wildcard patterns. The content
-script (`update()` in [`src/content/content-script.ts`](src/content/content-script.ts)) calls
-`repoMatchesFilters()` before querying: if the current `owner/repo` doesn't match, it removes any
-widget and returns without messaging the service worker — so no discovery or workflow API calls are
-made. An empty list means "active on all repos". `repoMatchesFilters` (in
+Activity is **hybrid**:
+
+- **Auto-detected**: a repo is active if Testkube has a workflow referencing it. This is learned from
+  the same `GET_MATCHES` query the worker already runs (`matches.length > 0`) — the worker fetches
+  all workflows for all environments once per TTL and caches them, so the per-repo check is
+  cache-backed.
+- **Manual**: the optional **Active on repositories** patterns mark additional repos as active even
+  when they have no workflow yet (these show the create-a-workflow empty state).
+
+`update()` in [`src/content/content-script.ts`](src/content/content-script.ts) computes
+`manual = repoMatchesPatterns(ref, repoFilters)` (an empty list matches nothing). It shows the
+loading placeholder only for `manual` repos (known active up front); other repos are queried
+silently and only render if the response has matches. After the response it renders when
+`hasMatches || manual`, otherwise removes the widget. `repoMatchesPatterns` (in
 [`src/lib/match.ts`](src/lib/match.ts)) matches case-insensitively against the full `owner/repo`,
 treating `*` as any run of characters and `?` as a single character (all other regex metacharacters
 are escaped). Changes to the setting are applied live via the `chrome.storage.onChanged` listener.
 
-Note: this gates the API queries, not the content-script injection — the script still loads on all
-of `github.com/*` per the static `content_scripts` match in `manifest.config.ts`.
+Notes:
+
+- This determines whether the panel/queries run, not whether the content script is injected — the
+  script still loads on all of `github.com/*` per the static `content_scripts` match in
+  `manifest.config.ts`.
+- Because auto-detection needs the workflow data to know which repos qualify, the worker is queried
+  on every Code-tab repo (served from the shared cache after the first fetch per TTL). Auto-refresh
+  only re-queries while a panel is actually showing.
 
 ## Caching & refresh
 
@@ -140,7 +159,7 @@ Defaults and storage live in [`src/lib/storage.ts`](src/lib/storage.ts):
 | ---------------------- | ------------------------- | ---------------------- |
 | API base URL           | `https://api.testkube.io` | `chrome.storage.sync`  |
 | Dashboard base URL     | `https://app.testkube.io` | `chrome.storage.sync`  |
-| Active on repositories | `[]` (all repos)          | `chrome.storage.sync`  |
+| Active on repositories | `[]` (auto-detect only)   | `chrome.storage.sync`  |
 | Auto-refresh interval  | `0` (off)                 | `chrome.storage.sync`  |
 | API token              | —                         | `chrome.storage.local` |
 

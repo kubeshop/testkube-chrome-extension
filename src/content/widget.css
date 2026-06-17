@@ -247,3 +247,20 @@
   color: var(--fgColor-muted, #656d76);
 }
 
+.tk-gh-empty {
+  font-size: 12px;
+  color: var(--fgColor-muted, #656d76);
+}
+
+.tk-gh-empty-text {
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.tk-gh-empty-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+

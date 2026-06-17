@@ -37,5 +37,7 @@ export interface MatchesResponse {
   matches: MatchedWorkflow[];
   // Environments (token-accessible) that have matching workflows, for the dropdown.
   environments: MatchedEnvironment[];
+  // Base dashboard URL, used by the empty state to link to Testkube.
+  dashboardUrl?: string;
   error?: string;
 }

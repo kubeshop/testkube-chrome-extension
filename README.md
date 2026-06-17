@@ -51,8 +51,9 @@ automatically, so no IDs are required.
 
 ## Usage
 
-Visit any GitHub repository that is referenced by a TestWorkflow (via its `content.git.uri`) in an
-environment your token can access. The **Test Results** section appears in the right-hand sidebar:
+The extension activates automatically on any GitHub repository that a TestWorkflow references (via
+its `content.git.uri`) in an environment your token can access — no configuration needed. The
+**Test Results** section appears in the right-hand sidebar:
 
 - Hover a status row to see the workflows in that bucket.
 - Click a workflow to jump to its latest execution in Testkube.
@@ -60,25 +61,29 @@ environment your token can access. The **Test Results** section appears in the r
 - Use the environment dropdown (shown when results span multiple environments) to switch
   environments, and the refresh icon to re-fetch.
 
-If no workflows reference the repo, the section is not shown.
+On repos that have **no** matching workflows, the extension stays out of the way by default. If you
+add a repo to **Active on repositories** (see below), the section still appears there with a short
+note and a link to open Testkube.
 
 ## Configuration
 
 All configuration lives in the options page:
 
-| Setting               | Default                   | Notes                                                                                    |
-| --------------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
-| API base URL          | `https://api.testkube.io` | Change for self-managed control planes                                                   |
-| Dashboard base URL    | `https://app.testkube.io` | Used to build deep links                                                                 |
-| Active on repositories | (empty = all repos)      | Allowlist of wildcard patterns matched against `owner/repo`; limits where it queries     |
-| Auto-refresh interval | `0` (off)                 | Seconds between automatic refreshes while viewing a repo                                 |
-| API token             | —                         | Stored locally in the browser, never synced                                              |
+| Setting                | Default                   | Notes                                                                                 |
+| ---------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
+| API base URL           | `https://api.testkube.io` | Change for self-managed control planes                                                |
+| Dashboard base URL     | `https://app.testkube.io` | Used to build deep links                                                              |
+| Active on repositories | (empty)                   | Extra wildcard patterns to also activate on, beyond auto-detected repos               |
+| Auto-refresh interval  | `0` (off)                 | Seconds between automatic refreshes while viewing a repo                              |
+| API token              | —                         | Stored locally in the browser, never synced                                           |
 
-**Active on repositories** lets you restrict the extension to specific repos so it doesn't query
-your Testkube workflows on every GitHub page. Enter one wildcard pattern per line, matched
-case-insensitively against the full `owner/repo` (e.g. `kubeshop/*`, `*/testkube*`, `my-org/my-repo`).
-`*` matches any run of characters and `?` matches a single character. Leave it empty to stay active
-on all repositories.
+By default the extension figures out where to be active from your Testkube data: it appears on any
+repo that has a matching workflow. **Active on repositories** lets you *additionally* light it up on
+repos that don't have a workflow yet — there it shows the "create a Test Workflow" prompt to
+encourage adding one. Enter one wildcard pattern per line, matched case-insensitively against the
+full `owner/repo` (e.g. `kubeshop/*`, `*/testkube*`, `my-org/my-repo`); `*` matches any run of
+characters and `?` matches a single character. Leaving it empty means the extension only appears on
+auto-detected repos.
 
 If you point the API base URL at a different host, that origin must also be allowed in the
 extension's host permissions — see [DEVELOPMENT.md](DEVELOPMENT.md).

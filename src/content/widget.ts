@@ -150,10 +150,6 @@ export function removeWidget(): void {
 
 export function renderWidget(res: MatchesResponse): void {
   removeWidget();
-  if (res.configured && res.ok && res.matches.length === 0) {
-    log('renderWidget: configured but 0 matches, staying silent');
-    return;
-  }
   ensureStyles();
   lastRendered = res;
 
@@ -164,7 +160,8 @@ export function renderWidget(res: MatchesResponse): void {
   const content = buildContent(res);
   const total = res.configured && res.ok ? visibleMatches(res).length : 0;
   const showRefresh = res.configured && res.ok;
-  const headerUrl = res.configured && res.ok ? currentDashboardUrl(res) : undefined;
+  const headerUrl =
+    res.configured && res.ok ? (currentDashboardUrl(res) ?? res.dashboardUrl) : undefined;
   const envName = res.configured && res.ok ? selectedEnvName(res) : undefined;
   const headerTooltip = envName
     ? `Test Workflows in the ${envName} Testkube Environment that run tests in this repository`
@@ -207,6 +204,11 @@ function buildContent(res: MatchesResponse): HTMLElement {
     return buildNotice(res.error ?? 'Failed to query Testkube.');
   }
 
+  // No workflow tests this repo yet: encourage the user to create one.
+  if (res.matches.length === 0) {
+    return buildEmptyState(res);
+  }
+
   const container = document.createElement('div');
 
   // Only offer a selector when matches span more than one environment.
@@ -216,6 +218,36 @@ function buildContent(res: MatchesResponse): HTMLElement {
 
   container.appendChild(buildSummary(visibleMatches(res), currentExecutionsUrl(res)));
   return container;
+}
+
+function externalLink(href: string, text: string): HTMLAnchorElement {
+  const a = document.createElement('a');
+  a.className = 'tk-gh-link';
+  a.href = href;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.textContent = text;
+  return a;
+}
+
+// Shown when the repo is configured/reachable but no workflow references it.
+function buildEmptyState(res: MatchesResponse): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'tk-gh-empty';
+
+  const lead = document.createElement('p');
+  lead.className = 'tk-gh-empty-text';
+  lead.textContent = 'No Testkube test workflows reference this repository yet.';
+  wrap.appendChild(lead);
+
+  if (res.dashboardUrl) {
+    const links = document.createElement('div');
+    links.className = 'tk-gh-empty-links';
+    links.appendChild(externalLink(res.dashboardUrl, 'Open Testkube \u2192'));
+    wrap.appendChild(links);
+  }
+
+  return wrap;
 }
 
 // Dashboard URL for the selected environment (used by the header title link).

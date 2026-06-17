@@ -236,6 +236,7 @@ async function handleGetMatches(
       configured: true,
       matches: matched,
       environments: [...envMatches.values()].sort((a, b) => a.name.localeCompare(b.name)),
+      dashboardUrl: settings.dashboardBaseUrl.replace(/\/+$/, ''),
     };
   } catch (err) {
     const message = err instanceof TestkubeError ? err.message : String(err);

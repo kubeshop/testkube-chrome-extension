@@ -99,7 +99,7 @@ export function App() {
       </label>
 
       <label className="field">
-        <span className="field-label">Active on repositories (one wildcard per line, empty = all)</span>
+        <span className="field-label">Active on repositories (one wildcard per line)</span>
         <textarea
           rows={4}
           value={settings.repoFilters.join('\n')}
@@ -108,8 +108,10 @@ export function App() {
           onChange={(e) => update({ repoFilters: e.target.value.split('\n') })}
         />
         <span className="field-hint">
-          Matched case-insensitively against <code>owner/repo</code>. Use <code>*</code> for any
-          characters and <code>?</code> for a single character.
+          The panel appears automatically on repos that have Testkube workflows. Add patterns here to
+          also show it (with a prompt to create a workflow) on repos that don't have one yet. Matched
+          case-insensitively against <code>owner/repo</code>; <code>*</code> = any characters,{' '}
+          <code>?</code> = a single character.
         </span>
       </label>
 

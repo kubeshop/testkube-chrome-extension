@@ -21,14 +21,14 @@ function wildcardToRegExp(pattern: string): RegExp {
   return new RegExp(`^${body}$`, 'i');
 }
 
-// Whether the repo is allowed by the user's allowlist of wildcard patterns,
-// matched case-insensitively against the full "owner/repo" string. An empty
-// list means "active on all repos".
-export function repoMatchesFilters(ref: RepoRef, filters: string[]): boolean {
-  const patterns = filters.map((f) => f.trim()).filter(Boolean);
-  if (patterns.length === 0) return true;
+// Whether the repo explicitly matches one of the user's wildcard patterns,
+// compared case-insensitively against the full "owner/repo" string. An empty
+// list matches nothing (activity then comes purely from Testkube auto-detection).
+export function repoMatchesPatterns(ref: RepoRef, patterns: string[]): boolean {
+  const cleaned = patterns.map((p) => p.trim()).filter(Boolean);
+  if (cleaned.length === 0) return false;
   const target = `${ref.owner}/${ref.repo}`;
-  return patterns.some((p) => wildcardToRegExp(p).test(target));
+  return cleaned.some((p) => wildcardToRegExp(p).test(target));
 }
 
 // GitHub top-level path segments that are not repository owners.
