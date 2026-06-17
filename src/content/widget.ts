@@ -93,8 +93,7 @@ export function renderWidget(res: MatchesResponse): void {
   if (injectIntoSidebar(content, total)) {
     log('renderWidget: injected "Tests Executed" section into sidebar');
   } else {
-    log('renderWidget: sidebar section not found, using floating fallback');
-    injectFloating(content, total);
+    log('renderWidget: sidebar section not found, skipping injection');
   }
 }
 
@@ -354,18 +353,4 @@ function findAnchorHeading(): { heading: HTMLElement; wrapper: HTMLElement } | n
     }
   }
   return null;
-}
-
-function injectFloating(content: HTMLElement, total: number): void {
-  const host = document.createElement('div');
-  host.id = HOST_ID;
-  host.className = 'tk-gh-floating';
-
-  const heading = document.createElement('span');
-  heading.className = 'tk-gh-heading';
-  heading.textContent = 'Tests Executed';
-  appendHeadingCount(heading, total);
-
-  host.append(heading, content);
-  document.body.appendChild(host);
 }
