@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS, getSettings, isConfigured, saveSettings } from '../lib/storage';
-import { listWorkflows } from '../lib/testkube';
+import { listEnvironments, listOrganizations } from '../lib/testkube';
 import type { Settings } from '../lib/types';
 
 type TestState =
@@ -36,10 +36,16 @@ export function App() {
   const onTest = async () => {
     setTest({ kind: 'testing' });
     try {
-      const workflows = await listWorkflows(settings);
+      const orgs = await listOrganizations(settings);
+      if (orgs.length === 0) {
+        setTest({ kind: 'error', message: 'No organizations are accessible with this token.' });
+        return;
+      }
+      const org = orgs[0];
+      const envs = await listEnvironments(settings, org.id);
       setTest({
         kind: 'ok',
-        message: `Connected. Found ${workflows.length} workflow(s) in this environment.`,
+        message: `Connected to "${org.name}" — ${envs.length} environment(s) accessible.`,
       });
     } catch (err) {
       setTest({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
@@ -81,22 +87,14 @@ export function App() {
       </label>
 
       <label className="field">
-        <span className="field-label">Organization ID</span>
+        <span className="field-label">Auto-refresh interval (seconds, 0 = off)</span>
         <input
-          type="text"
-          value={settings.orgId}
-          placeholder="tkcorg_xxxxxxxxxxxx"
-          onChange={(e) => update({ orgId: e.target.value })}
-        />
-      </label>
-
-      <label className="field">
-        <span className="field-label">Environment ID</span>
-        <input
-          type="text"
-          value={settings.environmentId}
-          placeholder="tkcenv_xxxxxxxxxxxx"
-          onChange={(e) => update({ environmentId: e.target.value })}
+          type="number"
+          min={0}
+          step={5}
+          value={settings.refreshIntervalSeconds}
+          placeholder="0"
+          onChange={(e) => update({ refreshIntervalSeconds: Number(e.target.value) })}
         />
       </label>
 

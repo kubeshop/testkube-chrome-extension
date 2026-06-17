@@ -5,6 +5,56 @@ import widgetCss from './widget.css?inline';
 export const HOST_ID = 'testkube-gh-widget-host';
 const STYLE_ID = 'testkube-gh-widget-style';
 
+// In-memory UI state (persists across GitHub's soft navigations while the content
+// script stays alive). The last response is kept so the environment dropdown can
+// re-render the panel without re-querying the API.
+let lastRendered: MatchesResponse | null = null;
+let selectedEnvId = '';
+
+// Registered by the content script; invoked when the user clicks the refresh icon.
+let onRefresh: (() => void) | null = null;
+
+export function setOnRefresh(fn: () => void): void {
+  onRefresh = fn;
+}
+
+const SYNC_ICON =
+  'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .655-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z';
+
+function buildRefreshButton(): HTMLElement {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'tk-gh-refresh';
+  btn.title = 'Refresh Testkube data';
+  btn.setAttribute('aria-label', 'Refresh Testkube data');
+  btn.innerHTML = `<svg class="tk-gh-octicon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="${SYNC_ICON}"></path></svg>`;
+  btn.addEventListener('click', () => {
+    btn.classList.add('tk-gh-refresh--spinning');
+    onRefresh?.();
+  });
+  return btn;
+}
+
+// Inject a placeholder "Tests Executed" section with a spinner while the first
+// query for a repo is in flight. An optional dashboard URL is shown so the link
+// is available before results arrive.
+export function renderLoading(dashboardUrl?: string): void {
+  ensureStyles();
+  removeWidget();
+  const content = document.createElement('div');
+
+  const row = document.createElement('div');
+  row.className = 'tk-gh-loading';
+  row.innerHTML =
+    `<span class="tk-gh-loading-spinner"><svg class="tk-gh-octicon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="${SYNC_ICON}"></path></svg></span>` +
+    `<span>Loading test workflows…</span>`;
+  content.appendChild(row);
+
+  if (injectIntoSidebar(content, 0, false, dashboardUrl)) {
+    log('renderLoading: injected loading state');
+  }
+}
+
 // Headings (by text) we will try to insert our section above, in priority order.
 const ANCHOR_HEADINGS = ['Releases', 'Packages', 'Deployments', 'Languages'];
 
@@ -87,14 +137,37 @@ export function renderWidget(res: MatchesResponse): void {
     return;
   }
   ensureStyles();
+  lastRendered = res;
+
+  // Resolve the effective selection: keep the user's choice if it still applies,
+  // otherwise default to the environment with the most matches.
+  selectedEnvId = effectiveEnvId(res);
 
   const content = buildContent(res);
-  const total = res.configured && res.ok ? res.matches.length : 0;
-  if (injectIntoSidebar(content, total)) {
+  const total = res.configured && res.ok ? visibleMatches(res).length : 0;
+  const showRefresh = res.configured && res.ok;
+  const headerUrl = res.configured && res.ok ? currentDashboardUrl(res) : undefined;
+  const envName = res.configured && res.ok ? selectedEnvName(res) : undefined;
+  const headerTooltip = envName
+    ? `Test Workflows in the ${envName} Testkube Environment that run tests in this repository`
+    : undefined;
+  if (injectIntoSidebar(content, total, showRefresh, headerUrl, headerTooltip)) {
     log('renderWidget: injected "Tests Executed" section into sidebar');
   } else {
     log('renderWidget: sidebar section not found, skipping injection');
   }
+}
+
+// The environment to show: the current selection if still present, else the one
+// with the most matches.
+function effectiveEnvId(res: MatchesResponse): string {
+  if (selectedEnvId && res.environments.some((e) => e.id === selectedEnvId)) return selectedEnvId;
+  return [...res.environments].sort((a, b) => b.matchCount - a.matchCount)[0]?.id ?? '';
+}
+
+// Matches limited to the currently selected environment.
+function visibleMatches(res: MatchesResponse): MatchedWorkflow[] {
+  return res.matches.filter((m) => m.environmentId === selectedEnvId);
 }
 
 // A grey count rendered after the "Tests Executed" label, mirroring how GitHub
@@ -107,31 +180,62 @@ function appendHeadingCount(heading: HTMLElement, total: number): void {
   heading.append(count);
 }
 
-// Build the inner content (summary + hover popover, or a notice).
+// Build the inner content (optional env dropdown + summary + hover popover, or a notice).
 function buildContent(res: MatchesResponse): HTMLElement {
   if (!res.configured) {
-    return buildNotice('Open the extension options to set your organization, environment and token.');
+    return buildNotice('Open the extension options to set your Testkube API token.');
   }
   if (!res.ok) {
     return buildNotice(res.error ?? 'Failed to query Testkube.');
   }
 
   const container = document.createElement('div');
-  container.appendChild(buildSummary(res.matches));
-  if (res.environmentUrl) {
-    container.appendChild(buildDashboardLink(res.environmentUrl));
+
+  // Only offer a selector when matches span more than one environment.
+  if (res.environments.length > 1) {
+    container.appendChild(buildEnvironmentSelect(res));
   }
+
+  container.appendChild(buildSummary(visibleMatches(res), currentExecutionsUrl(res)));
   return container;
 }
 
-function buildDashboardLink(environmentUrl: string): HTMLElement {
-  const link = document.createElement('a');
-  link.className = 'tk-gh-dashboard-link';
-  link.href = environmentUrl;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.textContent = 'Testkube Dashboard';
-  return link;
+// Dashboard URL for the selected environment (used by the header title link).
+function currentDashboardUrl(res: MatchesResponse): string | undefined {
+  return res.environments.find((e) => e.id === selectedEnvId)?.dashboardUrl;
+}
+
+// Executions list URL for the selected environment (used by the status labels).
+function currentExecutionsUrl(res: MatchesResponse): string | undefined {
+  return res.environments.find((e) => e.id === selectedEnvId)?.executionsUrl;
+}
+
+function selectedEnvName(res: MatchesResponse): string | undefined {
+  return res.environments.find((e) => e.id === selectedEnvId)?.name;
+}
+
+function buildEnvironmentSelect(res: MatchesResponse): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'tk-gh-env';
+
+  const select = document.createElement('select');
+  select.className = 'tk-gh-env-select';
+
+  for (const env of res.environments) {
+    const option = document.createElement('option');
+    option.value = env.id;
+    option.textContent = `${env.name} (${env.matchCount})`;
+    select.appendChild(option);
+  }
+
+  select.value = selectedEnvId;
+  select.addEventListener('change', () => {
+    selectedEnvId = select.value;
+    if (lastRendered) renderWidget(lastRendered);
+  });
+
+  wrap.appendChild(select);
+  return wrap;
 }
 
 function buildNotice(detail: string): HTMLElement {
@@ -151,7 +255,7 @@ const SUMMARY_ORDER: Array<{ kind: StatusKind; label: string; always: boolean }>
   { kind: 'running', label: 'running', always: false },
 ];
 
-function buildSummary(matches: MatchedWorkflow[]): HTMLElement {
+function buildSummary(matches: MatchedWorkflow[], executionsUrl?: string): HTMLElement {
   const groups = new Map<StatusKind, MatchedWorkflow[]>();
   for (const m of matches) {
     const kind = statusKind(m.status);
@@ -167,7 +271,7 @@ function buildSummary(matches: MatchedWorkflow[]): HTMLElement {
     const items = groups.get(kind) ?? [];
     if (items.length === 0 && !always) continue;
 
-    const stat = buildStat(kind, items.length, label);
+    const stat = buildStat(kind, items.length, label, executionsUrl);
     if (items.length > 0) {
       stat.tabIndex = 0;
       stat.classList.add('tk-gh-stat--interactive');
@@ -264,7 +368,28 @@ function attachPopover(trigger: HTMLElement, popover: HTMLElement): void {
   });
 }
 
-function buildStat(kind: StatusKind, count: number, label: string): HTMLElement {
+// Stable IDs of the dashboard's prepopulated executions views. A status bucket
+// links to its matching view's pre-filtered list; buckets without a predefined
+// view (e.g. cancelled) fall back to the unfiltered executions list.
+const STATUS_VIEW_IDS: Partial<Record<StatusKind, string>> = {
+  passed: 'default-passed-executions',
+  failed: 'default-failed-executions',
+  aborted: 'default-aborted-executions',
+  running: 'default-running-executions',
+};
+
+function statusExecutionsUrl(executionsUrl: string | undefined, kind: StatusKind): string | undefined {
+  if (!executionsUrl) return undefined;
+  const viewId = STATUS_VIEW_IDS[kind];
+  return viewId ? `${executionsUrl}/views/${viewId}` : executionsUrl;
+}
+
+function buildStat(
+  kind: StatusKind,
+  count: number,
+  label: string,
+  executionsUrl?: string,
+): HTMLElement {
   const stat = document.createElement('span');
   stat.className = 'tk-gh-stat';
 
@@ -272,8 +397,21 @@ function buildStat(kind: StatusKind, count: number, label: string): HTMLElement 
   value.className = 'tk-gh-count';
   value.textContent = String(count);
 
-  const text = document.createElement('span');
-  text.textContent = label;
+  // The label links to the matching prefiltered executions view when available.
+  const href = statusExecutionsUrl(executionsUrl, kind);
+  let text: HTMLElement;
+  if (href) {
+    const link = document.createElement('a');
+    link.className = 'tk-gh-stat-link';
+    link.href = href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = label;
+    text = link;
+  } else {
+    text = document.createElement('span');
+    text.textContent = label;
+  }
 
   stat.append(octicon(kind), value, text);
   return stat;
@@ -302,7 +440,15 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
 // Find a sidebar section by heading text and insert a native-looking
 // "Tests Executed" section above it, cloning the row/cell/heading classes so it
 // visually matches GitHub regardless of the (possibly hashed) class names.
-function injectIntoSidebar(content: HTMLElement, total: number): boolean {
+const HEADER_TITLE = 'Test Results';
+
+function injectIntoSidebar(
+  content: HTMLElement,
+  total: number,
+  showRefresh: boolean,
+  headerUrl?: string,
+  headerTooltip?: string,
+): boolean {
   const found = findAnchorHeading();
   if (!found) return false;
 
@@ -325,8 +471,22 @@ function injectIntoSidebar(content: HTMLElement, total: number): boolean {
   const newHeading = heading.cloneNode(false) as HTMLElement;
   newHeading.removeAttribute('data-testid');
   newHeading.removeAttribute('id');
-  newHeading.textContent = 'Tests Executed';
+  // Like GitHub's sidebar section headers, make the title itself a link.
+  if (headerUrl) {
+    const titleLink = document.createElement('a');
+    titleLink.className = 'tk-gh-heading-link';
+    titleLink.href = headerUrl;
+    titleLink.target = '_blank';
+    titleLink.rel = 'noopener noreferrer';
+    titleLink.textContent = HEADER_TITLE;
+    if (headerTooltip) titleLink.title = headerTooltip;
+    newHeading.appendChild(titleLink);
+  } else {
+    newHeading.textContent = HEADER_TITLE;
+    if (headerTooltip) newHeading.title = headerTooltip;
+  }
   appendHeadingCount(newHeading, total);
+  if (showRefresh) newHeading.appendChild(buildRefreshButton());
 
   mountPoint.append(newHeading, content);
   wrapper.parentElement.insertBefore(section, wrapper);

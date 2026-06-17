@@ -5,9 +5,29 @@
 export interface Settings {
   apiBaseUrl: string;
   dashboardBaseUrl: string;
-  orgId: string;
-  environmentId: string;
   apiToken: string;
+  // Auto-refresh interval in seconds while viewing a repo; 0 disables polling.
+  refreshIntervalSeconds: number;
+}
+
+// Control-plane discovery shapes (subset). The token is tied to a single
+// organization; the environments endpoint returns the set the token may access.
+export interface Organization {
+  id: string;
+  name: string;
+  slug?: string;
+}
+
+export interface Environment {
+  id: string;
+  name: string;
+  slug?: string;
+  connected?: boolean | null;
+  status?: string;
+}
+
+export interface ListResponse<T> {
+  elements?: T[];
 }
 
 // TestWorkflowStatus enum values we care about; kept as a string union with a

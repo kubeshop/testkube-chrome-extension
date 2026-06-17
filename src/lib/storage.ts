@@ -3,14 +3,13 @@ import type { Settings } from './types';
 export const DEFAULT_SETTINGS: Settings = {
   apiBaseUrl: 'https://api.testkube.io',
   dashboardBaseUrl: 'https://app.testkube.io',
-  orgId: '',
-  environmentId: '',
   apiToken: '',
+  refreshIntervalSeconds: 0,
 };
 
 // Non-secret settings live in storage.sync; the API token lives in storage.local
 // so it is not synced across the user's browsers.
-const SYNC_KEYS = ['apiBaseUrl', 'dashboardBaseUrl', 'orgId', 'environmentId'] as const;
+const SYNC_KEYS = ['apiBaseUrl', 'dashboardBaseUrl', 'refreshIntervalSeconds'] as const;
 const TOKEN_KEY = 'apiToken';
 
 export async function getSettings(): Promise<Settings> {
@@ -30,13 +29,12 @@ export async function saveSettings(s: Settings): Promise<void> {
     chrome.storage.sync.set({
       apiBaseUrl: s.apiBaseUrl.trim(),
       dashboardBaseUrl: s.dashboardBaseUrl.trim(),
-      orgId: s.orgId.trim(),
-      environmentId: s.environmentId.trim(),
+      refreshIntervalSeconds: Math.max(0, Math.floor(s.refreshIntervalSeconds) || 0),
     }),
     chrome.storage.local.set({ [TOKEN_KEY]: s.apiToken.trim() }),
   ]);
 }
 
 export function isConfigured(s: Settings): boolean {
-  return Boolean(s.apiBaseUrl && s.orgId && s.environmentId && s.apiToken);
+  return Boolean(s.apiBaseUrl && s.apiToken);
 }
