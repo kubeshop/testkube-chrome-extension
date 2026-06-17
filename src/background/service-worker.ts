@@ -6,7 +6,13 @@ import {
   listWorkflows,
   TestkubeError,
 } from '../lib/testkube';
-import { extractGitUris, workflowMatchesRepo, type RepoRef } from '../lib/match';
+import {
+  extractGitUris,
+  nearestNonGlobDir,
+  workflowMatchesRepo,
+  type MatchedGitPath,
+  type RepoRef,
+} from '../lib/match';
 import { log, warn, error as logError } from '../lib/log';
 import type {
   MatchedEnvironment,
@@ -129,6 +135,21 @@ function buildExecutionDetailsUrl(s: Settings, orgId: string, envId: string, exe
   return `${buildEnvironmentBase(s, orgId, envId)}/executions/${encodeURIComponent(execId)}`;
 }
 
+// Build a GitHub link for a workflow git path, pointing at the nearest non-glob
+// directory (a glob like `tests/**/*.spec.ts` links to `tests/`). GitHub
+// redirects `/tree/<ref>/<file>` to the blob view, so concrete file paths work too.
+function buildRepoPathUrl(repo: RepoRef, path: MatchedGitPath): string {
+  const ref = path.revision && path.revision.trim() ? path.revision.trim() : 'HEAD';
+  const base = `https://${repo.host}/${repo.owner}/${repo.repo}`;
+  const dir = nearestNonGlobDir(path.path);
+  if (!dir) return `${base}/tree/${encodeURIComponent(ref)}`;
+  const encodedDir = dir
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  return `${base}/tree/${encodeURIComponent(ref)}/${encodedDir}`;
+}
+
 async function handleGetMatches(
   owner: string,
   repo: string,
@@ -171,13 +192,17 @@ async function handleGetMatches(
       log(`env "${env.name}": ${workflows.length} workflow(s)`);
 
       for (const wf of workflows) {
-        const { matches, gitUris } = workflowMatchesRepo(wf, repoRef);
+        const { matches, gitUris, paths } = workflowMatchesRepo(wf, repoRef);
         if (!matches) {
           if (matched.length === 0) for (const uri of extractGitUris(wf)) allUris.add(uri);
           continue;
         }
         const name = getWorkflowName(wf);
         if (!name) continue;
+        const linkedPaths = paths.map((p) => ({
+          label: p.path,
+          url: buildRepoPathUrl(repoRef, p),
+        }));
         matched.push({
           name,
           gitUris,
@@ -186,6 +211,7 @@ async function handleGetMatches(
           // Default to the workflow's Executions tab; replaced with a direct
           // link to the latest execution once we know its id (below).
           dashboardUrl: buildWorkflowExecutionsUrl(settings, orgId, env.id, name),
+          paths: linkedPaths.length ? linkedPaths : undefined,
         });
       }
     });

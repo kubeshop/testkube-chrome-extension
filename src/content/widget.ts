@@ -471,6 +471,9 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
   const li = document.createElement('li');
   li.className = 'tk-gh-item';
 
+  const main = document.createElement('div');
+  main.className = 'tk-gh-item-main';
+
   const link = document.createElement('a');
   link.className = 'tk-gh-link';
   link.href = m.dashboardUrl;
@@ -483,7 +486,28 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
   status.className = 'tk-gh-item-status';
   status.textContent = m.status ?? 'no runs';
 
-  li.append(octicon(statusKind(m.status)), link, status);
+  main.append(octicon(statusKind(m.status)), link, status);
+  li.appendChild(main);
+
+  if (m.paths?.length) {
+    const paths = document.createElement('ul');
+    paths.className = 'tk-gh-paths';
+    for (const p of m.paths) {
+      const pathItem = document.createElement('li');
+      pathItem.className = 'tk-gh-path';
+      const pathLink = document.createElement('a');
+      pathLink.className = 'tk-gh-path-link';
+      pathLink.href = p.url;
+      pathLink.target = '_blank';
+      pathLink.rel = 'noopener noreferrer';
+      pathLink.textContent = p.label;
+      pathLink.title = p.label;
+      pathItem.appendChild(pathLink);
+      paths.appendChild(pathItem);
+    }
+    li.appendChild(paths);
+  }
+
   return li;
 }
 

@@ -1,5 +1,13 @@
 import type { TestWorkflowStatus } from './types';
 
+// A `content.git.paths` entry, resolved to a GitHub link.
+export interface WorkflowGitPath {
+  // The literal path/pattern as written in the workflow.
+  label: string;
+  // GitHub URL to the nearest non-glob directory of the path.
+  url: string;
+}
+
 export interface MatchedWorkflow {
   name: string;
   gitUris: string[];
@@ -8,6 +16,8 @@ export interface MatchedWorkflow {
   // Environment this workflow belongs to (discovered from the token).
   environmentId: string;
   environmentName: string;
+  // Git paths referenced by this workflow for the current repo, linked to GitHub.
+  paths?: WorkflowGitPath[];
 }
 
 // An environment that has at least one workflow matching the current repo.

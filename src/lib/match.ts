@@ -96,11 +96,24 @@ export function normalizeGitUri(uri: string): RepoRef | null {
   }
 }
 
-// Recursively collect every content.git.uri found anywhere in a workflow object
-// (top-level spec.content.git plus any nested step content).
-export function extractGitUris(workflow: unknown): string[] {
-  const uris: string[] = [];
-  const seen = new Set<string>();
+// A single `content.git` block from a workflow.
+export interface GitContent {
+  uri: string;
+  revision?: string;
+  paths: string[];
+}
+
+// A git path matched to the current repo, kept with the revision of the block
+// it came from so we can build accurate GitHub links.
+export interface MatchedGitPath {
+  path: string;
+  revision?: string;
+}
+
+// Recursively collect every `content.git` block found anywhere in a workflow
+// object (top-level spec.content.git plus any nested step content).
+export function extractGitContents(workflow: unknown): GitContent[] {
+  const contents: GitContent[] = [];
 
   const visit = (node: unknown): void => {
     if (!node || typeof node !== 'object') return;
@@ -112,26 +125,83 @@ export function extractGitUris(workflow: unknown): string[] {
     const git = obj.git as Record<string, unknown> | undefined;
     if (git && typeof git === 'object' && typeof git.uri === 'string') {
       const uri = git.uri.trim();
-      if (uri && !seen.has(uri)) {
-        seen.add(uri);
-        uris.push(uri);
+      if (uri) {
+        const revision =
+          typeof git.revision === 'string' && git.revision.trim() ? git.revision.trim() : undefined;
+        const paths = Array.isArray(git.paths)
+          ? git.paths
+              .filter((p): p is string => typeof p === 'string')
+              .map((p) => p.trim())
+              .filter(Boolean)
+          : [];
+        contents.push({ uri, revision, paths });
       }
     }
     for (const value of Object.values(obj)) visit(value);
   };
 
   visit(workflow);
+  return contents;
+}
+
+// Backwards-compatible helper: just the unique git URIs.
+export function extractGitUris(workflow: unknown): string[] {
+  const seen = new Set<string>();
+  const uris: string[] = [];
+  for (const { uri } of extractGitContents(workflow)) {
+    if (!seen.has(uri)) {
+      seen.add(uri);
+      uris.push(uri);
+    }
+  }
   return uris;
+}
+
+// Glob metacharacters that make a path segment non-navigable on GitHub.
+const GLOB_CHARS = /[*?[\]{}!]/;
+
+// Returns the leading run of path segments that contain no glob metacharacters,
+// i.e. the nearest non-glob directory the path can be linked to. For a fully
+// concrete path this is the path itself; for `tests/**/*.spec.ts` it is `tests`;
+// for `**/foo` it is the empty string (link to the repo root).
+export function nearestNonGlobDir(path: string): string {
+  const segments = path.split('/').filter(Boolean);
+  const prefix: string[] = [];
+  for (const segment of segments) {
+    if (GLOB_CHARS.test(segment)) break;
+    prefix.push(segment);
+  }
+  return prefix.join('/');
 }
 
 export function workflowMatchesRepo(
   workflow: unknown,
   repo: RepoRef,
-): { matches: boolean; gitUris: string[] } {
+): { matches: boolean; gitUris: string[]; paths: MatchedGitPath[] } {
   const target = canonicalRepoKey(repo);
-  const matchingUris = extractGitUris(workflow).filter((uri) => {
-    const ref = normalizeGitUri(uri);
+  const matching = extractGitContents(workflow).filter((content) => {
+    const ref = normalizeGitUri(content.uri);
     return ref ? canonicalRepoKey(ref) === target : false;
   });
-  return { matches: matchingUris.length > 0, gitUris: matchingUris };
+
+  const seenUris = new Set<string>();
+  const gitUris: string[] = [];
+  const seenPaths = new Set<string>();
+  const paths: MatchedGitPath[] = [];
+
+  for (const content of matching) {
+    if (!seenUris.has(content.uri)) {
+      seenUris.add(content.uri);
+      gitUris.push(content.uri);
+    }
+    for (const path of content.paths) {
+      const key = `${content.revision ?? ''}\u0000${path}`;
+      if (!seenPaths.has(key)) {
+        seenPaths.add(key);
+        paths.push({ path, revision: content.revision });
+      }
+    }
+  }
+
+  return { matches: matching.length > 0, gitUris, paths };
 }

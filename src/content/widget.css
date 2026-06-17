@@ -210,9 +210,6 @@
 }
 
 .tk-gh-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   padding: 5px 8px;
   border-radius: 6px;
   font-size: 12px;
@@ -220,6 +217,37 @@
 
 .tk-gh-item:hover {
   background: var(--bgColor-muted, rgba(140, 149, 159, 0.12));
+}
+
+.tk-gh-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tk-gh-paths {
+  list-style: none;
+  margin: 3px 0 0;
+  padding: 0 0 0 22px;
+}
+
+.tk-gh-path {
+  font-size: 11px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tk-gh-path-link {
+  font-family: var(--fontStack-monospace, ui-monospace, SFMono-Regular, monospace);
+  color: var(--fgColor-muted, #656d76);
+  text-decoration: none;
+}
+
+.tk-gh-path-link:hover {
+  color: var(--fgColor-accent, #0969da);
+  text-decoration: underline;
 }
 
 .tk-gh-link {
