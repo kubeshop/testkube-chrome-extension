@@ -44,6 +44,17 @@
   border-radius: 6px;
 }
 
+.tk-gh-kubie-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  vertical-align: text-bottom;
+}
+
+.tk-gh-kubie {
+  display: block;
+}
+
 .tk-gh-heading-link {
   color: inherit;
   text-decoration: none;

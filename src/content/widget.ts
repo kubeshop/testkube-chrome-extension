@@ -21,6 +21,24 @@ export function setOnRefresh(fn: () => void): void {
 const SYNC_ICON =
   'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .655-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z';
 
+// The Testkube "kubie" symbol (the gradient cube mark), inlined so it renders
+// without an extra asset request. The gradient id is namespaced to avoid
+// clashing with anything on the GitHub page.
+const KUBIE_ICON =
+  '<svg class="tk-gh-kubie" viewBox="0 0 35 43" width="12" height="15" fill="none" aria-hidden="true">' +
+  '<path d="M33.484 15.67 18.45.588a2.005 2.005 0 0 0-2.827 0L.586 15.669c-.373.374-.584.88-.586 1.41v7.852c.002.53.213 1.036.586 1.41l15.036 15.08a2.004 2.004 0 0 0 2.827 0l15.035-15.08c.374-.374.585-.88.587-1.41V17.08a2.004 2.004 0 0 0-.587-1.41Zm-1.25 8.255L29.33 21.01l2.903-2.911v5.825Zm-4.158-4.172L17.923 9.567V2.576l13.638 13.68-3.485 3.497ZM7.25 21.009l9.786-9.816 9.787 9.816-9.787 9.818-9.786-9.818Zm8.899-18.433v6.99L5.994 19.754 2.51 16.255l13.639-13.68Zm.887 37.758v-6.992l11.041-11.074 3.485 3.505-14.526 14.561Z" fill="url(#tk-gh-kubie-gradient)"/>' +
+  '<defs><linearGradient id="tk-gh-kubie-gradient" x1="6.147" y1="31.93" x2="27.989" y2="10.155" gradientUnits="userSpaceOnUse">' +
+  '<stop stop-color="#B0B5D8"/><stop offset=".13" stop-color="#9E9DD4"/><stop offset=".41" stop-color="#7A70CB"/>' +
+  '<stop offset=".66" stop-color="#604FC5"/><stop offset=".86" stop-color="#513AC1"/><stop offset="1" stop-color="#4B33C0"/>' +
+  '</linearGradient></defs></svg>';
+
+function buildKubieIcon(): HTMLElement {
+  const span = document.createElement('span');
+  span.className = 'tk-gh-kubie-wrap';
+  span.innerHTML = KUBIE_ICON;
+  return span;
+}
+
 function buildRefreshButton(): HTMLElement {
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -471,6 +489,8 @@ function injectIntoSidebar(
   const newHeading = heading.cloneNode(false) as HTMLElement;
   newHeading.removeAttribute('data-testid');
   newHeading.removeAttribute('id');
+  // Miniature Testkube "kubie" mark in front of the title.
+  newHeading.appendChild(buildKubieIcon());
   // Like GitHub's sidebar section headers, make the title itself a link.
   if (headerUrl) {
     const titleLink = document.createElement('a');
@@ -482,8 +502,10 @@ function injectIntoSidebar(
     if (headerTooltip) titleLink.title = headerTooltip;
     newHeading.appendChild(titleLink);
   } else {
-    newHeading.textContent = HEADER_TITLE;
-    if (headerTooltip) newHeading.title = headerTooltip;
+    const titleText = document.createElement('span');
+    titleText.textContent = HEADER_TITLE;
+    if (headerTooltip) titleText.title = headerTooltip;
+    newHeading.appendChild(titleText);
   }
   appendHeadingCount(newHeading, total);
   if (showRefresh) newHeading.appendChild(buildRefreshButton());
