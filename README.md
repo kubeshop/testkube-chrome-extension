@@ -1,128 +1,100 @@
 # Testkube for GitHub (Chrome extension)
 
-A proof-of-concept Manifest V3 Chrome extension that injects a **"Testkube"** badge into the
-GitHub repository page. The badge shows how many Testkube TestWorkflows reference the repository
-you are viewing, their latest run status, and deep links into the Testkube dashboard.
+A Chrome extension that surfaces your **Testkube** test results directly on GitHub repository pages.
+When you open a repo that is referenced by one or more Testkube TestWorkflows, the extension adds a
+**"Test Results"** section to the repo sidebar showing how many workflows ran, their latest status,
+and deep links into the Testkube dashboard.
 
-It talks to the Testkube Control Plane REST API (`https://api.testkube.io` by default) using an API
-token you provide in the options page. No backend changes are required.
+## Features
 
-## How it works
+- **"Test Results" sidebar section** on the repo home / Code tab, styled to match GitHub's native
+  sections (e.g. Releases).
+- **Status summary** grouped into passed, failed, aborted, cancelled, and running, each with a hover
+  popover listing the matching workflows.
+- **Deep links into Testkube:**
+  - The section title links to the environment's TestWorkflows dashboard.
+  - Each status label links to the matching prefiltered executions view (passed / failed / aborted /
+    running).
+  - Each workflow in a popover links straight to its **most recent execution**.
+- **Environment dropdown** — when matching workflows span multiple environments, pick which one to
+  view.
+- **Refresh** — a refresh icon re-queries on demand, plus an optional auto-refresh interval.
 
-```
-GitHub repo page ──(owner/repo)──▶ content script
-                                       │ chrome.runtime message
-                                       ▼
-                              background service worker
-                                       │ GET /agent/test-workflows  (Bearer token)
-                                       │ GET .../{name}/executions
-                                       ▼
-                                api.testkube.io
-                                       │
-                                       ▼
-                injected Shadow-DOM badge + popover with deep links
-```
+The organization and the environments your token can access are discovered automatically — you only
+provide a token. No Testkube backend changes are required.
 
-- The **content script** runs on `github.com`, parses `owner/repo`, and asks the background worker
-  for matches. It injects a badge into the repo "About" sidebar and re-injects across GitHub's
-  Turbo (soft) navigation.
-- The **background service worker** holds the token, calls the REST API (avoiding content-script
-  CORS), matches each workflow's `spec.content.git.uri` against the current repo, and fetches the
-  latest execution status for matched workflows. Workflow lists are cached per environment for a
-  few minutes.
-- The **options page** stores your organization ID, environment ID, base URLs, and API token.
+## Installation
 
-## Prerequisites
+> This extension is not yet published to the Chrome Web Store. Install it unpacked from a build.
 
-- Node.js 20+ and npm
-- Google Chrome (or any Chromium-based browser)
-- A Testkube Control Plane account with:
-  - an **Organization ID** and **Environment ID**
-  - an **API token / key** with read access to test workflows and executions
+1. Download or build the extension (see [DEVELOPMENT.md](DEVELOPMENT.md) to build from source).
+2. Open `chrome://extensions` in Chrome (or any Chromium-based browser).
+3. Enable **Developer mode** (top-right toggle).
+4. Click **Load unpacked** and select the `dist/` directory.
 
-### Finding your org/environment IDs and token
+## Setup
 
-The IDs appear in the dashboard URL when you are inside an environment:
+1. Click the extension icon and open **Options** (or right-click the icon → **Options**).
+2. Paste your Testkube **API token** (see below).
+3. Adjust the **API base URL** / **Dashboard base URL** only if you use a self-managed control plane
+   (defaults target Testkube Cloud).
+4. Optionally set an **auto-refresh interval** (seconds; `0` disables it).
+5. Click **Test connection** to verify — it reports the resolved organization and the number of
+   accessible environments — then **Save**.
 
-```
-https://app.testkube.io/organization/<ORG_ID>/environment/<ENV_ID>/dashboard/...
-```
+### Getting an API token
 
-Create an API token from your Testkube account/organization settings and paste it into the options
-page.
+Create an API token/key from your Testkube account or organization settings with read access to test
+workflows and executions, and paste it into the options page. A token is tied to a single
+organization; the extension resolves that organization and the environments the token may access
+automatically, so no IDs are required.
 
-## Development
+## Usage
 
-```bash
-npm install
-npm run dev
-```
+Visit any GitHub repository that is referenced by a TestWorkflow (via its `content.git.uri`) in an
+environment your token can access. The **Test Results** section appears in the right-hand sidebar:
 
-`npm run dev` starts Vite with the CRXJS plugin and writes an unpacked extension to `dist/` with
-hot reloading.
+- Hover a status row to see the workflows in that bucket.
+- Click a workflow to jump to its latest execution in Testkube.
+- Click a status label to open the corresponding prefiltered executions list.
+- Use the environment dropdown (shown when results span multiple environments) to switch
+  environments, and the refresh icon to re-fetch.
 
-To load it:
-
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. Click **Load unpacked** and select the `dist/` directory
-4. Open the extension's **Options** and fill in API base URL, org ID, environment ID, and token
-5. Click **Test connection** to verify, then **Save**
-6. Visit a GitHub repository that is referenced by a TestWorkflow in that environment
-
-## Build
-
-```bash
-npm run build
-```
-
-Produces a production bundle in `dist/` that can be loaded unpacked or zipped for distribution.
+If no workflows reference the repo, the section is not shown.
 
 ## Configuration
 
 All configuration lives in the options page:
 
-| Setting            | Default                   | Notes                                              |
-| ------------------ | ------------------------- | -------------------------------------------------- |
-| API base URL       | `https://api.testkube.io` | Change for self-managed control planes (see below) |
-| Dashboard base URL | `https://app.testkube.io` | Used to build deep links                           |
-| Organization ID    | —                         | From the dashboard URL                             |
-| Environment ID     | —                         | From the dashboard URL                             |
-| API token          | —                         | Stored in `chrome.storage.local`, never synced     |
+| Setting               | Default                   | Notes                                                    |
+| --------------------- | ------------------------- | -------------------------------------------------------- |
+| API base URL          | `https://api.testkube.io` | Change for self-managed control planes                   |
+| Dashboard base URL    | `https://app.testkube.io` | Used to build deep links                                 |
+| Auto-refresh interval | `0` (off)                 | Seconds between automatic refreshes while viewing a repo |
+| API token             | —                         | Stored locally in the browser, never synced              |
 
-If you point the API base URL at a different host, you must also add that origin to
-`host_permissions` in [`manifest.config.ts`](manifest.config.ts) and rebuild, otherwise the
-background worker's requests will be blocked.
+If you point the API base URL at a different host, that origin must also be allowed in the
+extension's host permissions — see [DEVELOPMENT.md](DEVELOPMENT.md).
 
-## Matching logic
+## Privacy & security
 
-A workflow matches the current repo when any `content.git.uri` found anywhere in its spec
-(top-level or in a step) normalizes to the same `github.com/owner/repo` as the page you are on.
-URL normalization handles `https://`, `ssh://`, `git@host:owner/repo.git`, and trailing `.git`.
+- Your API token is stored locally in the browser (`chrome.storage.local`) and is never synced or
+  sent anywhere except your configured Testkube control plane. Treat it as a credential.
+- The extension only makes requests to the configured Testkube API host; it does not send data to
+  any third party.
 
-## Limitations (PoC scope)
+## Limitations
 
-- Repo-level matching only (no branch/PR/path awareness yet)
-- Single organization/environment configured manually
-- The API token is stored locally and unencrypted — treat it as a credential
-- Status lookups are capped per page to avoid request bursts
-- Injects only on the repo home / Code tab
+- Repo-level matching only (no branch / PR / path awareness yet).
+- Injects only on the repo home / Code tab.
+- Scans every environment the token can access on each repo page (results cached for a few minutes);
+  a large number of environments/workflows increases request fan-out.
 
-## Project layout
+## Contributing & development
 
-```
-manifest.config.ts      MV3 manifest (CRXJS)
-vite.config.ts          Vite + CRXJS + React
-src/
-  background/service-worker.ts   message router, REST calls, caching
-  content/content-script.ts      repo detection + injection lifecycle
-  content/widget.ts              Shadow-DOM badge + popover
-  content/widget.css
-  options/              React options page
-  lib/
-    testkube.ts         REST client
-    match.ts            URL normalization + matching
-    storage.ts          settings (sync + local)
-    messaging.ts        content <-> background message contract
-    types.ts            minimal API types
-```
+Build instructions, architecture, and implementation details live in
+[DEVELOPMENT.md](DEVELOPMENT.md).
+
+## License
+
+[MIT](LICENSE)
