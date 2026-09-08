@@ -19,6 +19,16 @@ and deep links into the Testkube dashboard.
 - **Environment dropdown** — when matching workflows span multiple environments, pick which one to
   view.
 - **Refresh** — a refresh icon re-queries on demand, plus an optional auto-refresh interval.
+- **GitHub App integration** (when your control plane has the Testkube GitHub App enabled):
+  - The sidebar shows whether the repo is **connected** through the GitHub App, with its
+    connection status and the last few **pull request runs**, each linking to the PR and, when
+    an AI analysis was performed for that run, straight to its chat.
+  - Repos that are not connected yet get a **Connect Testkube Bot** link straight into the
+    dashboard's onboarding flow (preselecting the repo when the app is already installed on it).
+  - **Pull request pages** get a **Testkube** sidebar panel with the latest run for that PR:
+    overall status, the head commit it ran for (flagged **stale** when the PR has moved on), one
+    row per child workflow execution, quality gates, and a link to the AI analysis chat when one
+    was performed.
 
 The organization and the environments your token can access are discovered automatically — you only
 provide a token. No Testkube backend changes are required.
@@ -75,6 +85,7 @@ All configuration lives in the options page:
 | Dashboard base URL     | `https://app.testkube.io` | Used to build deep links                                                              |
 | Active on repositories | (empty)                   | Extra wildcard patterns to also activate on, beyond auto-detected repos               |
 | Auto-refresh interval  | `0` (off)                 | Seconds between automatic refreshes while viewing a repo                              |
+| GitHub App integration | on                        | Query the GitHub App endpoints for connection state and pull request results          |
 | API token              | —                         | Stored locally in the browser, never synced                                           |
 
 By default the extension figures out where to be active from your Testkube data: it appears on any
@@ -84,6 +95,13 @@ encourage adding one. Enter one wildcard pattern per line, matched case-insensit
 full `owner/repo` (e.g. `kubeshop/*`, `*/testkube*`, `my-org/my-repo`); `*` matches any run of
 characters and `?` matches a single character. Leaving it empty means the extension only appears on
 auto-detected repos.
+
+**GitHub App integration** needs the API token to hold the **run** role (or higher) in an
+environment; with a read-only token the workflow panel still works but connection state and pull
+request results are skipped. The role is checked per environment, so a token can have PR results in
+some environments and not others. **Test connection** on the options page reports what is
+available. Turn the setting off to silence those requests entirely, for example on a control plane
+that does not have the GitHub App enabled.
 
 If you point the API base URL at a different host, that origin must also be allowed in the
 extension's host permissions — see [DEVELOPMENT.md](DEVELOPMENT.md).
@@ -97,8 +115,9 @@ extension's host permissions — see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Limitations
 
-- Repo-level matching only (no branch / PR / path awareness yet).
-- Injects only on the repo home / Code tab.
+- Workflow matching is repo-level (the GitHub App integration adds PR awareness; branches and
+  commits are not covered yet).
+- Injects on the repo home / Code tab and on the pull request conversation tab.
 - Scans every environment the token can access on each repo page (results cached for a few minutes);
   a large number of environments/workflows increases request fan-out.
 

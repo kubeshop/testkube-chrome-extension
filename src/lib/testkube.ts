@@ -1,5 +1,12 @@
 import type {
   Environment,
+  ExecutionIntegrationEvent,
+  GithubAppCapability,
+  GithubRepository,
+  GithubRepositoryIntegration,
+  GithubRepositoryIntegrationEventList,
+  GithubRepositoryList,
+  ListExecutionIntegrationEventsResponse,
   ListResponse,
   Organization,
   Settings,
@@ -8,10 +15,13 @@ import type {
 
 export class TestkubeError extends Error {
   status?: number;
-  constructor(message: string, status?: number) {
+  // The `detail` member of an RFC 7807 problem body, when the API sent one.
+  detail?: string;
+  constructor(message: string, status?: number, detail?: string) {
     super(message);
     this.name = 'TestkubeError';
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -23,10 +33,26 @@ function controlPlaneBase(s: Settings): string {
   return s.apiBaseUrl.replace(/\/+$/, '');
 }
 
-function agentPath(orgId: string, environmentId: string, suffix: string): string {
+function envPath(orgId: string, environmentId: string, suffix: string): string {
   return `/organizations/${encodeURIComponent(orgId)}/environments/${encodeURIComponent(
     environmentId,
-  )}/agent${suffix}`;
+  )}${suffix}`;
+}
+
+function agentPath(orgId: string, environmentId: string, suffix: string): string {
+  return envPath(orgId, environmentId, `/agent${suffix}`);
+}
+
+// Pull the human-readable detail out of a problem+json body, if it is one.
+function problemDetail(body: string): string | undefined {
+  try {
+    const parsed = JSON.parse(body) as { detail?: unknown; title?: unknown };
+    if (typeof parsed.detail === 'string' && parsed.detail) return parsed.detail;
+    if (typeof parsed.title === 'string' && parsed.title) return parsed.title;
+  } catch {
+    // not JSON
+  }
+  return undefined;
 }
 
 // GET a path relative to the control-plane base URL.
@@ -45,15 +71,17 @@ async function apiGet<T>(s: Settings, path: string): Promise<T> {
   }
 
   if (!res.ok) {
-    let detail = '';
+    let body = '';
     try {
-      detail = await res.text();
+      body = await res.text();
     } catch {
       // ignore body read errors
     }
+    const detail = problemDetail(body);
     throw new TestkubeError(
-      `Testkube API ${res.status} ${res.statusText}${detail ? `: ${truncate(detail, 200)}` : ''}`,
+      `Testkube API ${res.status} ${res.statusText}${body ? `: ${truncate(detail ?? body, 200)}` : ''}`,
       res.status,
+      detail,
     );
   }
   return (await res.json()) as T;
@@ -99,4 +127,108 @@ export async function getLatestExecution(
   );
   const latest = data.results?.[0];
   return { status: latest?.result?.status, id: latest?.id };
+}
+
+// ---- GitHub App (Git Integration / quality loop) ---------------------------
+
+// Detail string the control plane puts on the 403 when the feature is off.
+const QUALITY_LOOP_DISABLED_DETAIL = 'quality loop feature is not enabled';
+
+// Repositories connected to an environment through the GitHub App.
+export async function listGithubIntegrations(
+  s: Settings,
+  orgId: string,
+  environmentId: string,
+): Promise<GithubRepositoryIntegration[]> {
+  const data = await apiGet<GithubRepositoryIntegration[] | null>(
+    s,
+    envPath(orgId, environmentId, '/integrations/github/integrations'),
+  );
+  return Array.isArray(data) ? data : [];
+}
+
+// Classify what the token can do with the GitHub App endpoints in an
+// environment. Uses the integrations list as the probe because it is the
+// cheapest call gated by the same role check as the rest of the feature.
+//
+// The feature gate runs before the role check server-side, so a 403 carrying
+// the "not enabled" detail means the whole control plane has it off; a bare
+// 403 means this token only has the read role here.
+export async function probeGithubApp(
+  s: Settings,
+  orgId: string,
+  environmentId: string,
+): Promise<{ capability: GithubAppCapability; integrations: GithubRepositoryIntegration[]; error?: string }> {
+  try {
+    const integrations = await listGithubIntegrations(s, orgId, environmentId);
+    return { capability: 'available', integrations };
+  } catch (err) {
+    if (err instanceof TestkubeError && err.status === 403) {
+      const detail = (err.detail ?? '').toLowerCase();
+      if (detail.includes(QUALITY_LOOP_DISABLED_DETAIL)) {
+        return { capability: 'disabled', integrations: [], error: err.message };
+      }
+      return { capability: 'read-only', integrations: [], error: err.message };
+    }
+    // Older control planes without the feature answer 404 for the route.
+    if (err instanceof TestkubeError && err.status === 404) {
+      return { capability: 'disabled', integrations: [], error: err.message };
+    }
+    return {
+      capability: 'error',
+      integrations: [],
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+// Resolve `owner/repo` to the GitHub repository reachable through the org's
+// installations. Returns undefined when no installation covers the repo.
+export async function findGithubRepository(
+  s: Settings,
+  orgId: string,
+  environmentId: string,
+  fullName: string,
+): Promise<GithubRepository | undefined> {
+  const q = encodeURIComponent(fullName);
+  const data = await apiGet<GithubRepositoryList>(
+    s,
+    envPath(orgId, environmentId, `/integrations/github/repositories?q=${q}&perPage=50`),
+  );
+  const wanted = fullName.toLowerCase();
+  return (data.repositories ?? []).find((r) => (r.fullName ?? '').toLowerCase() === wanted);
+}
+
+// Processed webhook events for a connected repository, newest first.
+export async function listGithubIntegrationEvents(
+  s: Settings,
+  orgId: string,
+  environmentId: string,
+  repositoryId: string,
+  page = 1,
+  perPage = 50,
+): Promise<GithubRepositoryIntegrationEventList> {
+  const data = await apiGet<GithubRepositoryIntegrationEventList>(
+    s,
+    envPath(
+      orgId,
+      environmentId,
+      `/integrations/github/repositories/${encodeURIComponent(repositoryId)}/events?page=${page}&perPage=${perPage}`,
+    ),
+  );
+  return data ?? {};
+}
+
+// The GitHub event(s) that started an execution, with PR context (head SHA).
+export async function listExecutionIntegrationEvents(
+  s: Settings,
+  orgId: string,
+  environmentId: string,
+  executionId: string,
+): Promise<ExecutionIntegrationEvent[]> {
+  const data = await apiGet<ListExecutionIntegrationEventsResponse>(
+    s,
+    envPath(orgId, environmentId, `/executions/${encodeURIComponent(executionId)}/integration-events`),
+  );
+  return data.events ?? [];
 }

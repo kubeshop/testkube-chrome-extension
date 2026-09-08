@@ -1,5 +1,6 @@
 import { log } from '../lib/log';
-import type { MatchedWorkflow, MatchesResponse } from '../lib/messaging';
+import type { MatchedWorkflow, MatchesResponse, RepoGithubConnection } from '../lib/messaging';
+import { timeAgo } from '../lib/time';
 import widgetCss from './widget.css?inline';
 
 export const HOST_ID = 'testkube-gh-widget-host';
@@ -18,7 +19,7 @@ export function setOnRefresh(fn: () => void): void {
   onRefresh = fn;
 }
 
-const SYNC_ICON =
+export const SYNC_ICON =
   'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .655-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z';
 
 // The Testkube "kubie" symbol (the gradient cube mark), inlined so it renders
@@ -32,14 +33,14 @@ const KUBIE_ICON =
   '<stop offset=".66" stop-color="#604FC5"/><stop offset=".86" stop-color="#513AC1"/><stop offset="1" stop-color="#4B33C0"/>' +
   '</linearGradient></defs></svg>';
 
-function buildKubieIcon(): HTMLElement {
+export function buildKubieIcon(): HTMLElement {
   const span = document.createElement('span');
   span.className = 'tk-gh-kubie-wrap';
   span.innerHTML = KUBIE_ICON;
   return span;
 }
 
-function buildRefreshButton(): HTMLElement {
+export function buildRefreshButton(handler: (() => void) | null = onRefresh): HTMLElement {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'tk-gh-refresh';
@@ -48,7 +49,7 @@ function buildRefreshButton(): HTMLElement {
   btn.innerHTML = `<svg class="tk-gh-octicon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="${SYNC_ICON}"></path></svg>`;
   btn.addEventListener('click', () => {
     btn.classList.add('tk-gh-refresh--spinning');
-    onRefresh?.();
+    handler?.();
   });
   return btn;
 }
@@ -76,9 +77,9 @@ export function renderLoading(dashboardUrl?: string): void {
 // Headings (by text) we will try to insert our section above, in priority order.
 const ANCHOR_HEADINGS = ['Releases', 'Packages', 'Deployments', 'Languages'];
 
-type StatusKind = 'passed' | 'failed' | 'aborted' | 'canceled' | 'running' | 'other' | 'unknown';
+export type StatusKind = 'passed' | 'failed' | 'aborted' | 'canceled' | 'running' | 'other' | 'unknown';
 
-function statusKind(status?: string): StatusKind {
+export function statusKind(status?: string): StatusKind {
   switch ((status ?? '').toLowerCase()) {
     case 'passed':
       return 'passed';
@@ -118,14 +119,14 @@ const ICON_PATHS: Record<StatusKind, string> = {
   unknown: DISC,
 };
 
-function octicon(kind: StatusKind): HTMLElement {
+export function octicon(kind: StatusKind): HTMLElement {
   const span = document.createElement('span');
   span.className = `tk-gh-icon tk-gh-icon--${kind}`;
   span.innerHTML = `<svg class="tk-gh-octicon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="${ICON_PATHS[kind]}"></path></svg>`;
   return span;
 }
 
-function ensureStyles(): void {
+export function ensureStyles(): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
@@ -204,7 +205,7 @@ function buildContent(res: MatchesResponse): HTMLElement {
     return buildNotice(res.error ?? 'Failed to query Testkube.');
   }
 
-  // No workflow tests this repo yet: encourage the user to create one.
+  // No workflow tests this repo yet: encourage the user to create/connect one.
   if (res.matches.length === 0) {
     return buildEmptyState(res);
   }
@@ -217,10 +218,112 @@ function buildContent(res: MatchesResponse): HTMLElement {
   }
 
   container.appendChild(buildSummary(visibleMatches(res), currentExecutionsUrl(res)));
+
+  const github = buildGithubSection(visibleConnections(res)) ?? buildNotConnectedSection(res);
+  if (github) container.appendChild(github);
   return container;
 }
 
-function externalLink(href: string, text: string): HTMLAnchorElement {
+const NOT_CONNECTED_TEXT = 'This repository is not connected to Testkube through the GitHub App yet.';
+
+// Build the "Connect Testkube Bot" link for a repo that has no connection.
+function buildConnectLink(res: MatchesResponse): HTMLAnchorElement | null {
+  if (!res.github?.connectUrl) return null;
+  const connect = externalLink(res.github.connectUrl, 'Connect Testkube Bot \u2192');
+  connect.title = res.github.connectEnvironmentName
+    ? `Connect this repository to the ${res.github.connectEnvironmentName} environment`
+    : 'Connect this repository through the Testkube GitHub App';
+  return connect;
+}
+
+// Shown under the workflow summary when the repo has workflows but is not
+// connected through the GitHub App (and the token could connect it).
+function buildNotConnectedSection(res: MatchesResponse): HTMLElement | null {
+  const connect = buildConnectLink(res);
+  if (!connect) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'tk-gh-github';
+  const text = document.createElement('p');
+  text.className = 'tk-gh-empty-text';
+  text.textContent = NOT_CONNECTED_TEXT;
+  const links = document.createElement('div');
+  links.className = 'tk-gh-empty-links';
+  links.appendChild(connect);
+  wrap.append(text, links);
+  return wrap;
+}
+
+// GitHub App connections shown for the selected environment (or all of them
+// when the selection is not one of the connected environments).
+function visibleConnections(res: MatchesResponse): RepoGithubConnection[] {
+  const all = res.github?.connections ?? [];
+  const forEnv = all.filter((c) => c.environmentId === selectedEnvId);
+  return forEnv.length > 0 || res.environments.some((e) => e.id === selectedEnvId) ? forEnv : all;
+}
+
+// Connection state + recent pull request runs from the GitHub App.
+function buildGithubSection(connections: RepoGithubConnection[]): HTMLElement | null {
+  if (connections.length === 0) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'tk-gh-github';
+  const showEnv = connections.length > 1;
+
+  for (const conn of connections) {
+    const row = document.createElement('div');
+    row.className = 'tk-gh-conn';
+    const dot = document.createElement('span');
+    dot.className = `tk-gh-conn-dot tk-gh-conn-dot--${String(conn.status).toLowerCase()}`;
+    const link = document.createElement('span');
+    link.className = 'tk-gh-conn-label';
+    link.textContent = 'GitHub App';
+    link.title = 'Connected via the Testkube GitHub App';
+    const status = document.createElement('span');
+    status.className = 'tk-gh-conn-status';
+    status.textContent = String(conn.status).replace(/_/g, ' ');
+    if (conn.errorMessage) status.title = conn.errorMessage;
+    row.append(dot, link, status);
+    if (showEnv) {
+      const env = document.createElement('span');
+      env.className = 'tk-gh-conn-env';
+      env.textContent = `· ${conn.environmentName}`;
+      row.appendChild(env);
+    }
+    wrap.appendChild(row);
+
+    if (conn.recentPullRequests.length > 0) {
+      const title = document.createElement('div');
+      title.className = 'tk-gh-recent-title';
+      title.textContent = 'Recent pull requests';
+      wrap.appendChild(title);
+      const list = document.createElement('ul');
+      list.className = 'tk-gh-recent';
+      for (const pr of conn.recentPullRequests) {
+        const li = document.createElement('li');
+        li.className = 'tk-gh-recent-item';
+        const num = document.createElement('a');
+        num.className = 'tk-gh-recent-num';
+        num.href = pr.url;
+        num.textContent = `#${pr.number}`;
+        num.title = `Pull request #${pr.number} (${pr.overall})`;
+        const when = document.createElement('span');
+        when.className = 'tk-gh-recent-when';
+        when.textContent = timeAgo(pr.updatedAt);
+        li.append(octicon(statusKind(pr.overall)), num, when);
+        if (pr.aiSessionUrl) {
+          const ai = externalLink(pr.aiSessionUrl, 'AI analysis');
+          ai.className = 'tk-gh-recent-ai';
+          ai.title = 'Open the AI analysis chat for this run in Testkube';
+          li.appendChild(ai);
+        }
+        list.appendChild(li);
+      }
+      wrap.appendChild(list);
+    }
+  }
+  return wrap;
+}
+
+export function externalLink(href: string, text: string): HTMLAnchorElement {
   const a = document.createElement('a');
   a.className = 'tk-gh-link';
   a.href = href;
@@ -237,15 +340,32 @@ function buildEmptyState(res: MatchesResponse): HTMLElement {
 
   const lead = document.createElement('p');
   lead.className = 'tk-gh-empty-text';
-  lead.textContent = 'No Testkube test workflows reference this repository yet.';
-  wrap.appendChild(lead);
+  const connections = res.github?.connections ?? [];
+  const links = document.createElement('div');
+  links.className = 'tk-gh-empty-links';
 
-  if (res.dashboardUrl) {
-    const links = document.createElement('div');
-    links.className = 'tk-gh-empty-links';
-    links.appendChild(externalLink(res.dashboardUrl, 'Open Testkube \u2192'));
-    wrap.appendChild(links);
+  if (connections.length > 0) {
+    // Connected through the GitHub App but no workflow has landed yet (e.g.
+    // onboarding still running): show the connection state instead.
+    lead.textContent = 'This repository is connected to Testkube; no test workflows have been created yet.';
+    wrap.appendChild(lead);
+    const section = buildGithubSection(connections);
+    if (section) wrap.appendChild(section);
+    return wrap;
   }
+
+  const connect = buildConnectLink(res);
+  if (connect) {
+    lead.textContent = NOT_CONNECTED_TEXT;
+    wrap.appendChild(lead);
+    links.appendChild(connect);
+  } else {
+    lead.textContent = 'No Testkube test workflows reference this repository yet.';
+    wrap.appendChild(lead);
+  }
+
+  if (res.dashboardUrl) links.appendChild(externalLink(res.dashboardUrl, 'Open Testkube \u2192'));
+  if (links.childElementCount > 0) wrap.appendChild(links);
 
   return wrap;
 }

@@ -292,3 +292,192 @@
   margin-top: 8px;
 }
 
+
+/* ---- GitHub App: repo sidebar connection + recent PRs ------------------- */
+
+.tk-gh-github {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--borderColor-muted, #d8dee4);
+  font-size: 12px;
+  color: var(--fgColor-muted, #656d76);
+}
+
+.tk-gh-conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.tk-gh-conn-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fgColor-muted, #8c959f);
+}
+
+.tk-gh-conn-dot--active,
+.tk-gh-conn-dot--ready {
+  background: var(--fgColor-success, #1a7f37);
+}
+
+.tk-gh-conn-dot--pending,
+.tk-gh-conn-dot--onboarding,
+.tk-gh-conn-dot--in_progress {
+  background: var(--fgColor-attention, #9a6700);
+}
+
+.tk-gh-conn-dot--failed {
+  background: var(--fgColor-danger, #cf222e);
+}
+
+.tk-gh-conn-label {
+  font-weight: 600;
+}
+
+.tk-gh-conn-status {
+  text-transform: capitalize;
+}
+
+.tk-gh-conn-env {
+  color: var(--fgColor-muted, #8c959f);
+}
+
+.tk-gh-recent-title {
+  margin: 6px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tk-gh-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tk-gh-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.7;
+}
+
+.tk-gh-recent-item .tk-gh-icon .tk-gh-octicon {
+  width: 12px;
+  height: 12px;
+}
+
+.tk-gh-recent-num {
+  color: var(--fgColor-accent, #0969da);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.tk-gh-recent-num:hover {
+  text-decoration: underline;
+}
+
+.tk-gh-recent-when {
+  flex: 1 1 auto;
+  color: var(--fgColor-muted, #8c959f);
+}
+
+.tk-gh-recent-ai {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--fgColor-muted, #8c959f);
+  text-decoration: none;
+}
+
+.tk-gh-recent-ai:hover {
+  color: var(--fgColor-accent, #0969da);
+  text-decoration: underline;
+}
+
+/* ---- GitHub App: pull request panel ------------------------------------- */
+
+.tk-gh-pr-heading {
+  display: flex;
+  align-items: center;
+}
+
+.tk-gh-pr-run {
+  font-size: 12px;
+  color: var(--fgColor-muted, #656d76);
+}
+
+.tk-gh-pr-run + .tk-gh-pr-run {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--borderColor-muted, #d8dee4);
+}
+
+.tk-gh-pr-env {
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tk-gh-pr-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.tk-gh-pr-overall {
+  font-weight: 600;
+  color: var(--fgColor-default, #1f2328);
+}
+
+.tk-gh-pr-sha {
+  font-family: var(--fontStack-monospace, ui-monospace, SFMono-Regular, monospace);
+  font-size: 11px;
+}
+
+.tk-gh-pr-stale {
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--fgColor-attention, #9a6700);
+  background: var(--bgColor-attention-muted, rgba(212, 167, 44, 0.2));
+  border-radius: 2em;
+}
+
+.tk-gh-pr-when {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--fgColor-muted, #8c959f);
+}
+
+.tk-gh-pr-children {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.tk-gh-pr-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.8;
+}
+
+.tk-gh-pr-child .tk-gh-link {
+  font-weight: 500;
+}
+
+.tk-gh-pr-message {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.tk-gh-pr-gates {
+  margin-top: 6px;
+  font-size: 11px;
+}

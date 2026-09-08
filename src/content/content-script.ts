@@ -1,18 +1,38 @@
 import { parseGithubRepoFromPath, repoMatchesPatterns, type RepoRef } from '../lib/match';
 import { log, warn } from '../lib/log';
 import { getSettings } from '../lib/storage';
-import type { GetMatchesRequest, MatchesResponse } from '../lib/messaging';
+import type {
+  GetMatchesRequest,
+  GetPullRequestRequest,
+  MatchesResponse,
+  PullRequestResponse,
+} from '../lib/messaging';
 import { HOST_ID, removeWidget, renderLoading, renderWidget, setOnRefresh } from './widget';
+import {
+  PR_HOST_ID,
+  removePrWidget,
+  renderPrLoading,
+  renderPrWidget,
+  setOnPrRefresh,
+} from './pr-widget';
 
 log('content script loaded on', location.href);
 
+// ---- Repo (Code tab) panel state -------------------------------------------
 let currentKey = '';
 let lastResponse: MatchesResponse | null = null;
 let pending = false;
+
+// ---- Pull request panel state ----------------------------------------------
+let currentPrKey = '';
+let lastPrResponse: PullRequestResponse | null = null;
+let prPending = false;
+
 let scheduled = false;
 let refreshTimer: ReturnType<typeof setInterval> | undefined;
 let dashboardBaseUrl = '';
 let repoFilters: string[] = [];
+let githubAppEnabled = true;
 
 function loadingDashboardUrl(): string | undefined {
   const base = dashboardBaseUrl.replace(/\/+$/, '');
@@ -27,20 +47,34 @@ function isCodeTab(pathname: string): boolean {
   return false;
 }
 
+// The PR conversation tab: /owner/repo/pull/123 (the Files/Checks tabs have
+// no sidebar to inject into).
+function pullRequestNumber(pathname: string): number | undefined {
+  const parts = pathname.split('/').filter(Boolean);
+  if (parts.length === 4 && parts[2] === 'pull' && /^\d+$/.test(parts[3])) return Number(parts[3]);
+  return undefined;
+}
+
 function keyFor(ref: RepoRef): string {
   return `${ref.owner}/${ref.repo}`;
 }
 
-async function update(force = false): Promise<void> {
-  const ref = parseGithubRepoFromPath(location.pathname);
-  if (!ref || !isCodeTab(location.pathname)) {
-    removeWidget();
-    currentKey = '';
-    lastResponse = null;
-    pending = false;
-    return;
+// The PR's current head commit, read from the timeline's commit links (the
+// last one is the newest). Undefined when the page has none we recognize.
+function readPageHeadSha(ref: RepoRef, number: number): string | undefined {
+  const prefix = `/${ref.owner}/${ref.repo}/pull/${number}/commits/`;
+  const links = document.querySelectorAll<HTMLAnchorElement>(`a[href^="${prefix}"]`);
+  let sha: string | undefined;
+  for (const a of links) {
+    const m = a.getAttribute('href')?.slice(prefix.length).match(/^([0-9a-f]{40})/i);
+    if (m) sha = m[1];
   }
+  return sha;
+}
 
+// ---- Repo panel ---------------------------------------------------------------
+
+async function updateRepo(ref: RepoRef, force: boolean): Promise<void> {
   const key = keyFor(ref);
   // A repo is "active" automatically when Testkube has a workflow for it (known
   // only after querying), OR when it explicitly matches a manual pattern. Manual
@@ -85,18 +119,114 @@ async function update(force = false): Promise<void> {
 
   // Guard against navigation that happened during the async round-trip.
   const now = parseGithubRepoFromPath(location.pathname);
-  if (!now || keyFor(now) !== key) return;
+  if (!now || keyFor(now) !== key || !isCodeTab(location.pathname)) return;
 
-  // Render when Testkube has workflows for the repo (auto-active) or the user
-  // explicitly allowlisted it (shows the create-a-workflow empty state).
+  // Render when Testkube has workflows for the repo or it is connected through
+  // the GitHub App (auto-active), or the user explicitly allowlisted it (shows
+  // the create/connect empty state).
   const hasMatches = res.configured && res.ok && res.matches.length > 0;
-  if (hasMatches || manual) {
+  const connected = res.configured && res.ok && (res.github?.connections.length ?? 0) > 0;
+  if (hasMatches || connected || manual) {
     lastResponse = res;
     renderWidget(res);
   } else {
     lastResponse = null;
     removeWidget();
   }
+}
+
+// ---- Pull request panel --------------------------------------------------------
+
+async function updatePullRequest(ref: RepoRef, number: number, force: boolean): Promise<void> {
+  const key = `${keyFor(ref)}#${number}`;
+  const manual = repoMatchesPatterns(ref, repoFilters);
+
+  if (!force && key === currentPrKey) {
+    if (document.getElementById(PR_HOST_ID)) return;
+    if (lastPrResponse) {
+      log('re-rendering PR panel for', key, '(host was removed)');
+      renderPrWidget(lastPrResponse, readPageHeadSha(ref, number));
+    } else if (prPending && manual) {
+      renderPrLoading();
+    }
+    return;
+  }
+
+  currentPrKey = key;
+  if (!force) {
+    lastPrResponse = null;
+    prPending = true;
+    if (manual) renderPrLoading();
+    else removePrWidget();
+  }
+  log('detected pull request', key, force ? '- forcing refresh' : '- requesting run from service worker');
+
+  const req: GetPullRequestRequest = {
+    type: 'GET_PULL_REQUEST',
+    owner: ref.owner,
+    repo: ref.repo,
+    number,
+    force,
+  };
+  let res: PullRequestResponse | undefined;
+  try {
+    res = (await chrome.runtime.sendMessage(req)) as PullRequestResponse | undefined;
+  } catch (err) {
+    warn('sendMessage failed (worker unavailable / context invalidated):', err);
+    prPending = false;
+    return;
+  }
+  prPending = false;
+  log('received PR response for', key, ':', res);
+  if (!res) return;
+
+  const now = parseGithubRepoFromPath(location.pathname);
+  if (!now || `${keyFor(now)}#${pullRequestNumber(location.pathname)}` !== key) return;
+
+  // Stay out of the way unless the repo is connected through the GitHub App,
+  // or the user allowlisted it (then show the connect / role notice).
+  const show = res.configured && res.ok && res.enabled && (res.connected || manual);
+  if (show || (manual && !res.ok)) {
+    lastPrResponse = res;
+    renderPrWidget(res, readPageHeadSha(ref, number));
+  } else {
+    lastPrResponse = null;
+    removePrWidget();
+  }
+}
+
+// ---- Dispatch ---------------------------------------------------------------------
+
+function resetRepo(): void {
+  removeWidget();
+  currentKey = '';
+  lastResponse = null;
+  pending = false;
+}
+
+function resetPr(): void {
+  removePrWidget();
+  currentPrKey = '';
+  lastPrResponse = null;
+  prPending = false;
+}
+
+async function update(force = false): Promise<void> {
+  const ref = parseGithubRepoFromPath(location.pathname);
+  const prNumber = ref ? pullRequestNumber(location.pathname) : undefined;
+
+  if (ref && isCodeTab(location.pathname)) {
+    if (currentPrKey) resetPr();
+    await updateRepo(ref, force);
+    return;
+  }
+  if (ref && prNumber !== undefined && githubAppEnabled) {
+    if (currentKey) resetRepo();
+    await updatePullRequest(ref, prNumber, force);
+    return;
+  }
+  if (currentKey) resetRepo();
+  if (currentPrKey) resetPr();
 }
 
 function scheduleUpdate(): void {
@@ -116,12 +246,15 @@ document.addEventListener('pjax:end', scheduleUpdate);
 const observer = new MutationObserver(scheduleUpdate);
 observer.observe(document.documentElement, { childList: true, subtree: true });
 
-// Manual refresh from the panel icon: re-query, bypassing caches.
+// Manual refresh from the panel icons: re-query, bypassing caches.
 setOnRefresh(() => {
   void update(true);
 });
+setOnPrRefresh(() => {
+  void update(true);
+});
 
-// Auto-refresh: re-query on an interval while viewing a repo. 0 disables it.
+// Auto-refresh: re-query on an interval while viewing a repo or PR. 0 disables it.
 function applyRefreshInterval(seconds: number): void {
   if (refreshTimer) {
     clearInterval(refreshTimer);
@@ -129,8 +262,11 @@ function applyRefreshInterval(seconds: number): void {
   }
   if (seconds > 0) {
     refreshTimer = setInterval(() => {
-      // Only refresh while a panel is actually showing (skip inactive repos).
-      if (currentKey && document.getElementById(HOST_ID)) void update(true);
+      // Only refresh while a panel is actually showing (skip inactive pages).
+      const showing =
+        (currentKey && document.getElementById(HOST_ID)) ||
+        (currentPrKey && document.getElementById(PR_HOST_ID));
+      if (showing) void update(true);
     }, seconds * 1000);
     log('auto-refresh every', seconds, 'seconds');
   }
@@ -141,6 +277,7 @@ function applyRefreshInterval(seconds: number): void {
 void getSettings().then((s) => {
   dashboardBaseUrl = s.dashboardBaseUrl;
   repoFilters = s.repoFilters;
+  githubAppEnabled = s.githubAppIntegration;
   applyRefreshInterval(s.refreshIntervalSeconds);
   void update();
 });
@@ -153,6 +290,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
   if (changes.dashboardBaseUrl) {
     dashboardBaseUrl = String(changes.dashboardBaseUrl.newValue ?? '');
+  }
+  if (changes.githubAppIntegration) {
+    githubAppEnabled = changes.githubAppIntegration.newValue !== false;
+    if (!githubAppEnabled) resetPr();
+    void update();
   }
   if (changes.repoFilters) {
     repoFilters = Array.isArray(changes.repoFilters.newValue)
