@@ -136,3 +136,24 @@ h1 {
   font-size: 11px;
   opacity: 0.6;
 }
+
+.field-checkbox {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+}
+
+.field-checkbox input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.field-checkbox .field-label {
+  margin-bottom: 0;
+}
+
+.field-checkbox .field-hint {
+  grid-column: 2;
+}

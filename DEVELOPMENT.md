@@ -88,8 +88,47 @@ GitHub repo page ──(owner/repo)──▶ content script
   there are no matches (but the repo is configured/reachable and allowed by the repo allowlist), it
   renders an empty state encouraging the user to create a Test Workflow, with links to the docs and
   the dashboard.
-- The **options page** stores the base URLs, the auto-refresh interval, the repo allowlist, and the
-  API token only.
+- The **options page** stores the base URLs, the auto-refresh interval, the repo allowlist, the
+  GitHub App toggle, and the API token only.
+
+### GitHub App (Git Integration) support
+
+When the **GitHub App integration** setting is on, the worker also talks to the control plane's
+Git Integration endpoints (the ones behind the Testkube GitHub App / "quality loop"):
+
+- On each repo query it **probes every environment** with
+  `GET .../integrations/github/integrations`. A `200` means the token has the `run` role there
+  and returns the connected repositories; a `403` whose problem `detail` says the quality loop
+  feature is not enabled marks the whole control plane as **disabled** (remaining environments are
+  skipped); a bare `403` marks that environment **read-only**; a `404` is treated as disabled
+  (older control planes). Results are cached per environment with the usual TTL
+  (`githubAppCache` in `chrome.storage.local`).
+- The current `owner/repo` is resolved to its numeric GitHub repository id via
+  `GET .../integrations/github/repositories?q=owner/repo` through any capable environment
+  (cached, including misses). A connection exists when that id appears in an environment's
+  integrations list; its first page of
+  `GET .../integrations/github/repositories/{repositoryId}/events` yields the recent PR runs.
+- Repos that are not connected anywhere get a **connect** link into the dashboard's onboarding
+  flow (`/onboarding?ref=github-app-installation&organization_id=…&environment_id=…`), with
+  `repository_id=…` appended when an installation already covers the repo. Repos the app is not
+  installed on get the same link without it, so the flow can start with installing the app.
+- On `/owner/repo/pull/N` the content script sends `GET_PULL_REQUEST`. The worker pages through the
+  repo's event log (newest first, bounded) for `pull_request` / `issue_comment` events with that
+  `issueNumber`, takes the newest per environment, and reads the head SHA from
+  `GET .../executions/{executionId}/integration-events`. The PR panel compares that SHA with the
+  PR's current head (the last `/pull/N/commits/<sha>` link in the timeline) and flags stale
+  results. The panel is only injected when the repo is connected (or allowlisted).
+- Workflows carrying the `testkube.io/managed-by` label (the GitHub App's synthesized
+  `ql-parent-*` workflows, test catalog scaffolds) are hidden from the sidebar counts, matching
+  what the dashboard shows by default; `ql-parent-*` is also matched by name. The parent
+  workflow's execution is never linked either: the PR panel and the recent-PR list only link to
+  the child workflow executions, the AI analysis chat, and the repository page. The parent
+  execution id is used solely to read the head SHA. Nothing links to the repository's
+  integration page in the dashboard either (the extension surfaces results, not integration
+  management); the only dashboard entry points are the environment/executions links, the AI
+  analysis chat, and the onboarding flow for repos that are not connected yet.
+
+Dashboard deep link added for this: the AI analysis chat `…/dashboard/chats/{sessionId}`.
 
 ### Deep links
 
@@ -161,6 +200,7 @@ Defaults and storage live in [`src/lib/storage.ts`](src/lib/storage.ts):
 | Dashboard base URL     | `https://app.testkube.io` | `chrome.storage.sync`  |
 | Active on repositories | `[]` (auto-detect only)   | `chrome.storage.sync`  |
 | Auto-refresh interval  | `0` (off)                 | `chrome.storage.sync`  |
+| GitHub App integration | `true`                    | `chrome.storage.sync`  |
 | API token              | —                         | `chrome.storage.local` |
 
 ### Targeting a different control plane
@@ -176,12 +216,14 @@ manifest.config.ts      MV3 manifest (CRXJS)
 vite.config.ts          Vite + CRXJS + React
 src/
   background/service-worker.ts   message router, REST calls, discovery, caching, deep-link building
-  content/content-script.ts      repo detection, injection lifecycle, refresh timer
-  content/widget.ts              sidebar section, per-status popovers, env dropdown, loading state
+  content/content-script.ts      repo / PR detection, injection lifecycle, refresh timer
+  content/widget.ts              sidebar section, per-status popovers, env dropdown, GitHub App state
+  content/pr-widget.ts           pull request sidebar panel (latest GitHub App run)
   content/widget.css
   options/                       React options page
   lib/
-    testkube.ts         REST client (orgs, environments, workflows, executions)
+    testkube.ts         REST client (orgs, environments, workflows, executions, GitHub App)
+    time.ts             relative-time formatting
     match.ts            URL normalization + repo matching
     storage.ts          settings (sync + local)
     messaging.ts        content <-> background message contract
@@ -198,10 +240,20 @@ Endpoints used (all with `Authorization: Bearer <token>`), relative to the API b
 - `GET /organizations/{org}/environments/{env}/agent/test-workflows`
 - `GET /organizations/{org}/environments/{env}/agent/test-workflows/{name}/executions`
 
+GitHub App integration (only when enabled; need the `run` role):
+
+- `GET /organizations/{org}/environments/{env}/integrations/github/integrations`
+- `GET /organizations/{org}/environments/{env}/integrations/github/repositories?q=owner/repo`
+- `GET /organizations/{org}/environments/{env}/integrations/github/repositories/{repositoryId}/events`
+- `GET /organizations/{org}/environments/{env}/executions/{executionId}/integration-events`
+
 ## Limitations (current scope)
 
-- Repo-level matching only (no branch / PR / path awareness yet).
-- Injects only on the repo home / Code tab.
+- Workflow matching is repo-level; PR awareness comes from the GitHub App events (no branch /
+  commit pages yet).
+- Injects on the repo home / Code tab and the PR conversation tab only.
+- The events endpoint has no PR-number filter, so the PR lookup pages through the repo's newest
+  events (up to 3 pages of 50); a very busy repo could push an old PR past that bound.
 - Scans every environment the token can access on each repo page (cached for a few minutes); large
   numbers of environments/workflows increase the request fan-out. A short auto-refresh interval
   re-fetches all environments each tick.

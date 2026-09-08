@@ -1,4 +1,10 @@
-import type { TestWorkflowStatus } from './types';
+import type {
+  GithubAppCapability,
+  GithubEventStatus,
+  GithubIntegrationStatus,
+  QualityGate,
+  TestWorkflowStatus,
+} from './types';
 
 // A `content.git.paths` entry, resolved to a GitHub link.
 export interface WorkflowGitPath {
@@ -31,6 +37,51 @@ export interface MatchedEnvironment {
   executionsUrl: string;
 }
 
+// ---- GitHub App (Git Integration) ------------------------------------------
+
+// What the token can do with the GitHub App endpoints, per environment.
+export interface EnvironmentCapability {
+  environmentId: string;
+  environmentName: string;
+  capability: GithubAppCapability;
+}
+
+// A recent pull request run for the repo, from the integration's event log.
+export interface RecentPullRequest {
+  number: number;
+  // GitHub URL of the pull request.
+  url: string;
+  // Pipeline status of the webhook event (received/processing/completed/...).
+  eventStatus: GithubEventStatus;
+  // Overall test status derived from the child executions (or the event).
+  overall: TestWorkflowStatus;
+  // The AI analysis chat for this run, when one was performed.
+  aiSessionUrl?: string;
+  updatedAt: string;
+}
+
+// The current repo, connected to an environment through the GitHub App.
+export interface RepoGithubConnection {
+  environmentId: string;
+  environmentName: string;
+  repositoryId: string;
+  status: GithubIntegrationStatus;
+  workflowName?: string;
+  errorMessage?: string;
+  recentPullRequests: RecentPullRequest[];
+}
+
+export interface RepoGithubInfo {
+  capabilities: EnvironmentCapability[];
+  // True when the control plane reports the feature as turned off.
+  featureDisabled: boolean;
+  connections: RepoGithubConnection[];
+  // Onboarding link when the repo is not connected to any capable environment
+  // yet (preselecting the repo when an installation already covers it).
+  connectUrl?: string;
+  connectEnvironmentName?: string;
+}
+
 export interface GetMatchesRequest {
   type: 'GET_MATCHES';
   owner: string;
@@ -39,7 +90,15 @@ export interface GetMatchesRequest {
   force?: boolean;
 }
 
-export type RuntimeRequest = GetMatchesRequest;
+export interface GetPullRequestRequest {
+  type: 'GET_PULL_REQUEST';
+  owner: string;
+  repo: string;
+  number: number;
+  force?: boolean;
+}
+
+export type RuntimeRequest = GetMatchesRequest | GetPullRequestRequest;
 
 export interface MatchesResponse {
   ok: boolean;
@@ -48,6 +107,52 @@ export interface MatchesResponse {
   // Environments (token-accessible) that have matching workflows, for the dropdown.
   environments: MatchedEnvironment[];
   // Base dashboard URL, used by the empty state to link to Testkube.
+  dashboardUrl?: string;
+  // GitHub App connection state for the repo (absent when the setting is off).
+  github?: RepoGithubInfo;
+  error?: string;
+}
+
+export interface PullRequestChild {
+  id: string;
+  workflowName: string;
+  status?: TestWorkflowStatus;
+  url: string;
+}
+
+// The latest GitHub App run for one pull request in one environment. The
+// GitHub App's synthesized parent workflow (ql-parent-*) and its execution are
+// an implementation detail and deliberately not exposed: only the child
+// workflow executions are linked.
+export interface PullRequestRun {
+  environmentId: string;
+  environmentName: string;
+  repositoryId: string;
+  eventId: string;
+  eventStatus: GithubEventStatus;
+  action?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Head commit the run was triggered for (from the execution's event context).
+  headSha?: string;
+  qualityGates: QualityGate[];
+  lastMessage?: string;
+  aiSessionUrl?: string;
+  children: PullRequestChild[];
+  overall: TestWorkflowStatus;
+}
+
+export interface PullRequestResponse {
+  ok: boolean;
+  configured: boolean;
+  // False when the GitHub App setting is switched off in the options page.
+  enabled: boolean;
+  capabilities: EnvironmentCapability[];
+  featureDisabled: boolean;
+  // True when the repo is connected in at least one capable environment.
+  connected: boolean;
+  runs: PullRequestRun[];
+  connectUrl?: string;
   dashboardUrl?: string;
   error?: string;
 }

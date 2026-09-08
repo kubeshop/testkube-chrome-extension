@@ -9,6 +9,12 @@ export default defineManifest({
   name: 'Testkube for GitHub',
   description: 'Surfaces Testkube TestWorkflows on the GitHub repositories they test.',
   version: pkg.version,
+  icons: {
+    16: 'icons/icon16.png',
+    32: 'icons/icon32.png',
+    48: 'icons/icon48.png',
+    128: 'icons/icon128.png',
+  },
   permissions: ['storage'],
   host_permissions: ['https://api.testkube.io/*'],
   background: {
@@ -25,5 +31,9 @@ export default defineManifest({
   options_page: 'src/options/index.html',
   action: {
     default_title: 'Testkube for GitHub',
+    default_icon: {
+      16: 'icons/icon16.png',
+      32: 'icons/icon32.png',
+    },
   },
 });

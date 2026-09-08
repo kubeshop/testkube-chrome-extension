@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS, getSettings, isConfigured, saveSettings } from '../lib/storage';
-import { listEnvironments, listOrganizations } from '../lib/testkube';
+import { listEnvironments, listOrganizations, probeGithubApp } from '../lib/testkube';
 import type { Settings } from '../lib/types';
 
 type TestState =
@@ -43,9 +43,30 @@ export function App() {
       }
       const org = orgs[0];
       const envs = await listEnvironments(settings, org.id);
+      let github = '';
+      if (settings.githubAppIntegration && envs.length > 0) {
+        // Probe each environment so the user learns up front whether pull
+        // request results will be available (needs the "run" role).
+        const probes = await Promise.all(envs.map((e) => probeGithubApp(settings, org.id, e.id)));
+        const available = probes.filter((p) => p.capability === 'available').length;
+        const readOnly = probes.filter((p) => p.capability === 'read-only').length;
+        if (probes.some((p) => p.capability === 'disabled')) {
+          github = ' GitHub App: not enabled on this control plane.';
+        } else if (available === 0 && readOnly > 0) {
+          github = ' GitHub App: unavailable — the token needs the "run" role in an environment.';
+        } else if (available > 0) {
+          const connected = probes.reduce((n, p) => n + p.integrations.length, 0);
+          github =
+            ` GitHub App: available in ${available} of ${envs.length} environment(s)` +
+            ` (${connected} connected repositor${connected === 1 ? 'y' : 'ies'})` +
+            (readOnly > 0 ? `; ${readOnly} read-only.` : '.');
+        } else {
+          github = ' GitHub App: could not be checked.';
+        }
+      }
       setTest({
         kind: 'ok',
-        message: `Connected to "${org.name}" — ${envs.length} environment(s) accessible.`,
+        message: `Connected to "${org.name}" — ${envs.length} environment(s) accessible.${github}`,
       });
     } catch (err) {
       setTest({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
@@ -112,6 +133,20 @@ export function App() {
           also show it (with a prompt to create a workflow) on repos that don't have one yet. Matched
           case-insensitively against <code>owner/repo</code>; <code>*</code> = any characters,{' '}
           <code>?</code> = a single character.
+        </span>
+      </label>
+
+      <label className="field field-checkbox">
+        <input
+          type="checkbox"
+          checked={settings.githubAppIntegration}
+          onChange={(e) => update({ githubAppIntegration: e.target.checked })}
+        />
+        <span className="field-label">GitHub App integration (pull request results)</span>
+        <span className="field-hint">
+          Shows the repository's GitHub App connection and recent pull request runs in the repo
+          sidebar, and a Testkube panel on pull request pages. Requires the API token to have the{' '}
+          <code>run</code> role in the environment. Turn off to skip these requests.
         </span>
       </label>
 
