@@ -33,6 +33,9 @@ let refreshTimer: ReturnType<typeof setInterval> | undefined;
 let dashboardBaseUrl = '';
 let repoFilters: string[] = [];
 let githubAppEnabled = true;
+// Bumped whenever a setting that changes what we render flips, so responses
+// to requests started under the old setting are discarded instead of rendered.
+let settingsEpoch = 0;
 
 function loadingDashboardUrl(): string | undefined {
   const base = dashboardBaseUrl.replace(/\/+$/, '');
@@ -105,6 +108,7 @@ async function updateRepo(ref: RepoRef, force: boolean): Promise<void> {
   log('detected repo', key, force ? '- forcing refresh' : '- requesting matches from service worker');
 
   const req: GetMatchesRequest = { type: 'GET_MATCHES', owner: ref.owner, repo: ref.repo, force };
+  const epoch = settingsEpoch;
   let res: MatchesResponse | undefined;
   try {
     res = (await chrome.runtime.sendMessage(req)) as MatchesResponse | undefined;
@@ -116,6 +120,9 @@ async function updateRepo(ref: RepoRef, force: boolean): Promise<void> {
   pending = false;
   log('received response for', key, ':', res);
   if (!res) return;
+  // Settings changed while the request was in flight: a fresh query is already
+  // on its way, so drop this one rather than render stale state.
+  if (epoch !== settingsEpoch) return;
 
   // Guard against navigation that happened during the async round-trip.
   const now = parseGithubRepoFromPath(location.pathname);
@@ -168,6 +175,7 @@ async function updatePullRequest(ref: RepoRef, number: number, force: boolean): 
     number,
     force,
   };
+  const epoch = settingsEpoch;
   let res: PullRequestResponse | undefined;
   try {
     res = (await chrome.runtime.sendMessage(req)) as PullRequestResponse | undefined;
@@ -179,6 +187,7 @@ async function updatePullRequest(ref: RepoRef, number: number, force: boolean): 
   prPending = false;
   log('received PR response for', key, ':', res);
   if (!res) return;
+  if (epoch !== settingsEpoch || !githubAppEnabled) return;
 
   const now = parseGithubRepoFromPath(location.pathname);
   if (!now || `${keyFor(now)}#${pullRequestNumber(location.pathname)}` !== key) return;
@@ -293,8 +302,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
   if (changes.githubAppIntegration) {
     githubAppEnabled = changes.githubAppIntegration.newValue !== false;
-    if (!githubAppEnabled) resetPr();
-    void update();
+    // Drop every panel and any in-flight response, then re-query (bypassing
+    // caches) so the GitHub App data disappears or appears immediately.
+    settingsEpoch += 1;
+    resetRepo();
+    resetPr();
+    void update(true);
   }
   if (changes.repoFilters) {
     repoFilters = Array.isArray(changes.repoFilters.newValue)
