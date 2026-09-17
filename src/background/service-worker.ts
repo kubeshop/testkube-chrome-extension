@@ -1,4 +1,5 @@
 import { getSettings, isConfigured } from '../lib/storage';
+import { hasHostPermission, hostPatternFor } from '../lib/permissions';
 import {
   findGithubRepository,
   getLatestExecution,
@@ -62,6 +63,16 @@ const QUALITY_LOOP_PARENT_PREFIX = 'ql-parent-';
 const RECENT_PR_LIMIT = 5;
 const EVENTS_PAGE_SIZE = 50;
 const MAX_EVENT_PAGES = 3;
+
+// A custom control plane the user has not granted host access to yet: fail
+// with a message that points at the fix instead of a bare "Failed to fetch".
+async function hostAccessError(s: Settings): Promise<string | undefined> {
+  if (await hasHostPermission(s.apiBaseUrl)) return undefined;
+  const pattern = hostPatternFor(s.apiBaseUrl);
+  return pattern
+    ? `Access to ${pattern.replace(/\/\*$/, '')} has not been granted. Open the extension options and click "Grant access".`
+    : `The API base URL "${s.apiBaseUrl}" is not a valid http(s) URL. Fix it in the extension options.`;
+}
 
 // Run an async function over items with a bounded number of in-flight calls.
 async function mapWithConcurrency<T>(
@@ -442,6 +453,9 @@ async function handleGetMatches(owner: string, repo: string, force: boolean): Pr
     return { ok: true, configured: false, matches: [], environments: [] };
   }
 
+  const hostError = await hostAccessError(settings);
+  if (hostError) return { ok: false, configured: true, matches: [], environments: [], error: hostError };
+
   const repoRef: RepoRef = { host: 'github.com', owner, repo };
   try {
     const { orgId, environments } = await discover(settings, force);
@@ -611,6 +625,8 @@ async function handleGetPullRequest(
     runs: [],
   };
   if (!base.configured || !base.enabled) return base;
+  const hostError = await hostAccessError(settings);
+  if (hostError) return { ...base, ok: false, error: hostError };
 
   const repoRef: RepoRef = { host: 'github.com', owner, repo };
   const fullName = `${owner}/${repo}`;

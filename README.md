@@ -103,8 +103,14 @@ some environments and not others. **Test connection** on the options page report
 available. Turn the setting off to silence those requests entirely, for example on a control plane
 that does not have the GitHub App enabled.
 
-If you point the API base URL at a different host, that origin must also be allowed in the
-extension's host permissions — see [DEVELOPMENT.md](DEVELOPMENT.md).
+### Self-managed control planes
+
+Point the **API base URL** (and **Dashboard base URL**) at your own deployment. The first time you
+**Save** or **Test connection** with a non-default API host, Chrome asks once whether the extension
+may access that host; accept the prompt and the grant persists. If you decline, a notice under the
+field offers **Grant access** to try again, and the GitHub panel explains what is missing. No
+rebuild is needed. For an API served over HTTPS with a self-signed certificate, make sure Chrome
+already trusts it (open the API URL in a normal tab once, or install the CA).
 
 ## Privacy & security
 

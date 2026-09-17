@@ -1,9 +1,9 @@
 import { defineManifest } from '@crxjs/vite-plugin';
 import pkg from './package.json';
 
-// Note: host_permissions is hardcoded to the Testkube cloud control plane for the
-// PoC. If you point the extension at a different API base URL in the options page,
-// add the matching origin here and rebuild.
+// The Testkube Cloud API is allowed up front. Any other API base URL (a
+// self-managed control plane) is covered by optional_host_permissions and is
+// granted at runtime from the options page, so no rebuild is needed.
 export default defineManifest({
   manifest_version: 3,
   name: 'Testkube for GitHub',
@@ -17,6 +17,7 @@ export default defineManifest({
   },
   permissions: ['storage'],
   host_permissions: ['https://api.testkube.io/*'],
+  optional_host_permissions: ['https://*/*', 'http://*/*'],
   background: {
     service_worker: 'src/background/service-worker.ts',
     type: 'module',

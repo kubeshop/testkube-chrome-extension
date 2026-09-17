@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS, getSettings, isConfigured, saveSettings } from '../lib/storage';
 import { listEnvironments, listOrganizations, probeGithubApp } from '../lib/testkube';
+import {
+  hasHostPermission,
+  hostPatternFor,
+  isDefaultApiHost,
+  requestHostPermission,
+} from '../lib/permissions';
 import type { Settings } from '../lib/types';
 
 type TestState =
@@ -14,6 +20,10 @@ export function App() {
   const [loaded, setLoaded] = useState(false);
   const [saved, setSaved] = useState(false);
   const [test, setTest] = useState<TestState>({ kind: 'idle' });
+  // Whether the browser lets us call the configured API host. The cloud host
+  // is allowed by the manifest; any other host needs a runtime grant.
+  const [hostGranted, setHostGranted] = useState(true);
+  const [hostDeclined, setHostDeclined] = useState(false);
 
   useEffect(() => {
     void getSettings().then((s) => {
@@ -22,6 +32,26 @@ export function App() {
     });
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    void hasHostPermission(settings.apiBaseUrl).then((ok) => {
+      if (!cancelled) setHostGranted(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [settings.apiBaseUrl]);
+
+  // Ask for host access when the configured host lacks it. Called from click
+  // handlers before any await so the request keeps its user-gesture context.
+  const ensureHostAccess = async (): Promise<boolean> => {
+    if (hostGranted || isDefaultApiHost(settings.apiBaseUrl)) return true;
+    const ok = await requestHostPermission(settings.apiBaseUrl);
+    setHostGranted(ok);
+    setHostDeclined(!ok);
+    return ok;
+  };
+
   const update = (patch: Partial<Settings>) => {
     setSettings((s) => ({ ...s, ...patch }));
     setSaved(false);
@@ -29,11 +59,16 @@ export function App() {
   };
 
   const onSave = async () => {
+    await ensureHostAccess();
     await saveSettings(settings);
     setSaved(true);
   };
 
   const onTest = async () => {
+    if (!(await ensureHostAccess())) {
+      setTest({ kind: 'error', message: hostAccessMessage(settings.apiBaseUrl) });
+      return;
+    }
     setTest({ kind: 'testing' });
     try {
       const orgs = await listOrganizations(settings);
@@ -78,6 +113,8 @@ export function App() {
   }
 
   const canTest = isConfigured(settings);
+  const hostPattern = hostPatternFor(settings.apiBaseUrl);
+  const showHostNotice = Boolean(settings.apiBaseUrl.trim()) && !hostGranted;
 
   return (
     <div className="card">
@@ -95,6 +132,24 @@ export function App() {
           placeholder="https://api.testkube.io"
           onChange={(e) => update({ apiBaseUrl: e.target.value })}
         />
+        {showHostNotice && (
+          <span className="host-notice">
+            {hostPattern ? (
+              <>
+                <span>
+                  {hostDeclined ? 'Access was declined. ' : ''}
+                  The extension needs permission to call{' '}
+                  <code>{hostPattern.replace(/\/\*$/, '')}</code>. Chrome will ask once.
+                </span>
+                <button type="button" className="btn small" onClick={() => void ensureHostAccess()}>
+                  Grant access
+                </button>
+              </>
+            ) : (
+              <span>Enter a valid http(s) URL.</span>
+            )}
+          </span>
+        )}
       </label>
 
       <label className="field">
@@ -185,4 +240,11 @@ export function App() {
       </p>
     </div>
   );
+}
+
+function hostAccessMessage(apiBaseUrl: string): string {
+  const pattern = hostPatternFor(apiBaseUrl);
+  return pattern
+    ? `Access to ${pattern.replace(/\/\*$/, '')} was not granted, so the extension cannot reach this control plane. Click "Grant access" and accept the prompt.`
+    : `"${apiBaseUrl}" is not a valid http(s) URL.`;
 }
