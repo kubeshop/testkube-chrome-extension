@@ -7,7 +7,7 @@ import pkg from './package.json';
 export default defineManifest({
   manifest_version: 3,
   name: 'Testkube for GitHub',
-  description: 'Surfaces Testkube TestWorkflows on the GitHub repositories they test.',
+  description: 'Surfaces Testkube TestWorkflow Results on the GitHub repositories and Pull Requests they test.',
   version: pkg.version,
   icons: {
     16: 'icons/icon16.png',
