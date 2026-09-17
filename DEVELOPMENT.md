@@ -205,9 +205,16 @@ Defaults and storage live in [`src/lib/storage.ts`](src/lib/storage.ts):
 
 ### Targeting a different control plane
 
-If you point the API base URL at a different host, add that origin to `host_permissions` in
-[`manifest.config.ts`](manifest.config.ts) and rebuild — otherwise the background worker's requests
-will be blocked by the browser.
+Requests from the service worker and the options page are only exempt from cross-origin rules for
+origins the extension holds a host permission for. The manifest grants `https://api.testkube.io/*`
+up front and declares `optional_host_permissions` for `https://*/*` and `http://*/*` (optional
+patterns do not prompt at install time). When the API base URL points elsewhere, the options page
+calls `chrome.permissions.request` for that origin from the **Save** / **Test connection** click
+handlers (the call must run from a user gesture, so it happens before any other `await`). The
+service worker checks `chrome.permissions.contains` before querying and returns a "grant access"
+error instead of a bare fetch failure when the grant is missing. See
+[`src/lib/permissions.ts`](src/lib/permissions.ts). The dashboard base URL needs no permission; it
+is only used to build links.
 
 ## Project layout
 
@@ -225,6 +232,7 @@ src/
     testkube.ts         REST client (orgs, environments, workflows, executions, GitHub App)
     time.ts             relative-time formatting
     match.ts            URL normalization + repo matching
+    permissions.ts      runtime host permission for custom control planes
     storage.ts          settings (sync + local)
     messaging.ts        content <-> background message contract
     log.ts              prefixed logging helpers

@@ -157,3 +157,27 @@ h1 {
 .field-checkbox .field-hint {
   grid-column: 2;
 }
+
+.host-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #9a6700;
+  background: rgba(212, 167, 44, 0.15);
+  border-radius: 6px;
+}
+
+.host-notice code {
+  font-size: 12px;
+}
+
+.btn.small {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  font-size: 12px;
+}
