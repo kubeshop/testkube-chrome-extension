@@ -52,7 +52,9 @@ npm run package
 ```
 
 Builds and zips the **contents** of `dist/` (not the folder) into
-`testkube-for-github-<version>.zip`, which is what the Web Store developer dashboard accepts.
+`testkube-for-github-<version>.zip`, which is what the Web Store developer dashboard accepts. The
+zip is produced by [`scripts/package.mjs`](scripts/package.mjs) in pure Node, so it works on any
+platform without a `zip` binary.
 Bump the version in `package.json` before every upload; the store rejects a re-upload of a version
 it has already seen. The listing texts, permission justifications, and asset checklist live in
 [STORE_LISTING.md](STORE_LISTING.md); the privacy policy the listing links to is

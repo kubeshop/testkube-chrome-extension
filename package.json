@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "package": "npm run build && rm -f testkube-for-github-*.zip && cd dist && zip -qr ../testkube-for-github-$npm_package_version.zip ."
+    "package": "npm run build && node scripts/package.mjs"
   },
   "dependencies": {
     "react": "^19.2.7",
@@ -22,6 +22,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
+    "fflate": "^0.8.3",
     "typescript": "^5.9.0",
     "vite": "^8.0.16"
   }

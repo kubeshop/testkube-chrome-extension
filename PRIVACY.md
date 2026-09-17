@@ -15,15 +15,19 @@ where it goes.
   patterns, and the GitHub App toggle. Stored in the browser's synced extension storage
   (`chrome.storage.sync`), which Chrome may sync across your signed-in browsers.
 - **Cached responses** — organization, environment, workflow, and GitHub App connection data
-  returned by your Testkube control plane, kept in local extension storage for a few minutes to
-  reduce repeated requests.
+  returned by your Testkube control plane, kept in local extension storage to reduce repeated
+  requests. Entries are treated as stale after a few minutes and overwritten by the next request;
+  stale entries can remain on disk until then, and all of it is deleted when the extension is
+  removed.
 
 ## What the extension sends, and to whom
 
 - The extension sends requests **only to the Testkube control plane you configure** (by default
   `https://api.testkube.io`). Each request carries your API token so Testkube can authorize it.
-- The requests include the GitHub repository name (`owner/repo`) and, on pull request pages, the
-  pull request number of the page you are viewing, so Testkube can return the matching results.
+- The requests include the GitHub repository name (`owner/repo`) of the page you are viewing, so
+  Testkube can return the matching workflows and connection state. On pull request pages the
+  extension downloads the repository's recent integration events from Testkube and selects the
+  ones for the pull request you are viewing locally; the pull request number itself is not sent.
 - The extension **does not send any data to the extension's authors or to any third party**. It
   contains no analytics, telemetry, advertising, or tracking.
 

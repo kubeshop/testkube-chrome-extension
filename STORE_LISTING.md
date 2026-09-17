@@ -24,14 +24,17 @@ cancelled, running), and deep links into the Testkube dashboard. Hover a status 
 workflows behind it and jump straight to their most recent execution.
 
 If the repository is connected through the **Testkube GitHub App**, the sidebar also shows the
-connection status and recent pull request runs, and every **pull request page** gets a Testkube
-panel with the latest run for that PR: overall status, the commit it ran for (flagged when the PR
-has moved on), one row per workflow execution, quality gates, and a link to the AI analysis when
-one was performed. Repositories that are not connected yet get a one-click link to connect them.
+connection status and recent pull request runs, and the **pull request conversation tab** gets a
+Testkube panel with the latest run for that PR: overall status, the commit it ran for (flagged when
+the PR has moved on), one row per workflow execution, quality gates, and a link to the AI analysis
+when one was performed. Repositories that are not connected yet get a one-click link to connect
+them. The GitHub App features require the Testkube GitHub App to be enabled on your control plane
+and an API token with access to its integration endpoints; otherwise the extension shows workflow
+results only.
 
 Setup takes a minute: paste a Testkube API token in the options page. The extension discovers your
 organization and environments automatically. It works with Testkube Cloud out of the box and with
-self-managed control planes by entering your own API URL.
+self-managed control planes by entering your own API and dashboard URLs.
 
 Features
 
@@ -58,14 +61,15 @@ Show Testkube test results on GitHub repository and pull request pages.
 | --- | --- |
 | `storage` | Stores the user's Testkube API token and settings, and caches control-plane responses for a few minutes. |
 | Host `https://api.testkube.io/*` | Calls the Testkube Cloud API to read organizations, environments, test workflows, executions, and GitHub App integration state for the repository or pull request being viewed. |
-| Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit from the page) and injects the Test Results section into the sidebar. |
+| Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit from the page) to select which results to show, and injects the Test Results section into the sidebar. Only the repository name is sent to the configured Testkube host. |
 | Optional hosts `https://*/*`, `http://*/*` | Users running a self-managed Testkube control plane enter their own API URL. Access to that single origin is requested at runtime, only when the user saves such a URL, and is used solely for the same Testkube API calls. No host is accessed without an explicit grant. |
 
 ## Data usage disclosure
 
 - **Data collected:** Authentication information (the user's Testkube API token, entered by the
-  user). Website content: the repository name and pull request number of the GitHub page being
-  viewed, sent to the user's Testkube control plane as query parameters.
+  user). Website content: the repository name (`owner/repo`) of the GitHub page being viewed, sent
+  to the user's Testkube control plane as a query parameter. The pull request number is used only
+  locally to select results.
 - **Not collected:** personal communications, financial or payment information, health
   information, location, web history, user activity, personally identifiable information.
 - **Certifications:** data is not sold to third parties; not used or transferred for purposes
