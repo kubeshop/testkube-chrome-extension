@@ -9,6 +9,7 @@ export default defineManifest({
   name: 'Testkube for GitHub',
   description: 'Surfaces Testkube TestWorkflow Results on the GitHub repositories and Pull Requests they test.',
   version: pkg.version,
+  homepage_url: 'https://github.com/kubeshop/testkube-chrome-extension',
   icons: {
     16: 'icons/icon16.png',
     32: 'icons/icon32.png',
