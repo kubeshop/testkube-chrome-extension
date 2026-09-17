@@ -42,10 +42,12 @@ export function App() {
     };
   }, [settings.apiBaseUrl]);
 
-  // Ask for host access when the configured host lacks it. Called from click
-  // handlers before any await so the request keeps its user-gesture context.
+  // Ask for host access for a non-default host. Called from click handlers
+  // before any await so the request keeps its user-gesture context. It does not
+  // consult the (asynchronously refreshed) `hostGranted` state, which can lag a
+  // just-edited URL: an already-granted origin resolves without a prompt.
   const ensureHostAccess = async (): Promise<boolean> => {
-    if (hostGranted || isDefaultApiHost(settings.apiBaseUrl)) return true;
+    if (isDefaultApiHost(settings.apiBaseUrl)) return true;
     const ok = await requestHostPermission(settings.apiBaseUrl);
     setHostGranted(ok);
     setHostDeclined(!ok);
