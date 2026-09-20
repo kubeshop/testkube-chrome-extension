@@ -35,7 +35,8 @@ provide a token. No Testkube backend changes are required.
 
 ## Installation
 
-> This extension is not yet published to the Chrome Web Store. Install it unpacked from a build.
+Install **Testkube for GitHub** from the Chrome Web Store (link to follow once the listing is
+published), or load a build unpacked:
 
 1. Download or build the extension (see [DEVELOPMENT.md](DEVELOPMENT.md) to build from source).
 2. Open `chrome://extensions` in Chrome (or any Chromium-based browser).
@@ -118,6 +119,7 @@ already trusts it (open the API URL in a normal tab once, or install the CA).
   sent anywhere except your configured Testkube control plane. Treat it as a credential.
 - The extension only makes requests to the configured Testkube API host; it does not send data to
   any third party.
+- Full details in the [privacy policy](PRIVACY.md).
 
 ## Limitations
 
