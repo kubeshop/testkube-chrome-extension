@@ -87,16 +87,16 @@ function buildNotConnected(res: PullRequestResponse): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'tk-gh-empty';
   const capable = res.capabilities.some((c) => c.capability === 'available');
-  const readOnly = res.capabilities.some((c) => c.capability === 'read-only');
+  const forbidden = res.capabilities.some((c) => c.capability === 'forbidden');
 
   const lead = document.createElement('p');
   lead.className = 'tk-gh-empty-text';
   if (res.connectUrl) {
     lead.textContent = 'This repository is not connected to Testkube through the GitHub App yet.';
     wrap.append(lead, linksRow([externalLink(res.connectUrl, 'Connect Testkube Bot →')]));
-  } else if (!capable && readOnly) {
+  } else if (!capable && forbidden) {
     lead.textContent =
-      'Your Testkube API token needs the "run" role in an environment to see pull request results.';
+      'Your Testkube API token cannot access the GitHub App integration in any environment.';
     wrap.appendChild(lead);
   } else {
     lead.textContent = 'This repository is not connected to Testkube through the GitHub App yet.';

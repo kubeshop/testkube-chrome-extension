@@ -153,7 +153,8 @@ export async function listGithubIntegrations(
 //
 // The feature gate runs before the role check server-side, so a 403 carrying
 // the "not enabled" detail means the whole control plane has it off; a bare
-// 403 means this token only has the read role here.
+// 403 means this token is denied in this environment (the environment read
+// role suffices on current control planes; older ones required run).
 export async function probeGithubApp(
   s: Settings,
   orgId: string,
@@ -168,7 +169,7 @@ export async function probeGithubApp(
       if (detail.includes(QUALITY_LOOP_DISABLED_DETAIL)) {
         return { capability: 'disabled', integrations: [], error: err.message };
       }
-      return { capability: 'read-only', integrations: [], error: err.message };
+      return { capability: 'forbidden', integrations: [], error: err.message };
     }
     // Older control planes without the feature answer 404 for the route.
     if (err instanceof TestkubeError && err.status === 404) {

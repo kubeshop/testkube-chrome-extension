@@ -83,20 +83,20 @@ export function App() {
       let github = '';
       if (settings.githubAppIntegration && envs.length > 0) {
         // Probe each environment so the user learns up front whether pull
-        // request results will be available (needs the "run" role).
+        // request results will be available.
         const probes = await Promise.all(envs.map((e) => probeGithubApp(settings, org.id, e.id)));
         const available = probes.filter((p) => p.capability === 'available').length;
-        const readOnly = probes.filter((p) => p.capability === 'read-only').length;
+        const forbidden = probes.filter((p) => p.capability === 'forbidden').length;
         if (probes.some((p) => p.capability === 'disabled')) {
           github = ' GitHub App: not enabled on this control plane.';
-        } else if (available === 0 && readOnly > 0) {
-          github = ' GitHub App: unavailable — the token needs the "run" role in an environment.';
+        } else if (available === 0 && forbidden > 0) {
+          github = ' GitHub App: unavailable — the token cannot access the integration endpoints.';
         } else if (available > 0) {
           const connected = probes.reduce((n, p) => n + p.integrations.length, 0);
           github =
             ` GitHub App: available in ${available} of ${envs.length} environment(s)` +
             ` (${connected} connected repositor${connected === 1 ? 'y' : 'ies'})` +
-            (readOnly > 0 ? `; ${readOnly} read-only.` : '.');
+            (forbidden > 0 ? `; ${forbidden} without access.` : '.');
         } else {
           github = ' GitHub App: could not be checked.';
         }
@@ -202,8 +202,8 @@ export function App() {
         <span className="field-label">GitHub App integration (pull request results)</span>
         <span className="field-hint">
           Shows the repository's GitHub App connection and recent pull request runs in the repo
-          sidebar, and a Testkube panel on pull request pages. Requires the API token to have the{' '}
-          <code>run</code> role in the environment. Turn off to skip these requests.
+          sidebar, and a Testkube panel on pull request pages. Works with any token that can read
+          the environment. Turn off to skip these requests.
         </span>
       </label>
 

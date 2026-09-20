@@ -112,11 +112,12 @@ When the **GitHub App integration** setting is on, the worker also talks to the 
 Git Integration endpoints (the ones behind the Testkube GitHub App / "quality loop"):
 
 - On each repo query it **probes every environment** with
-  `GET .../integrations/github/integrations`. A `200` means the token has the `run` role there
-  and returns the connected repositories; a `403` whose problem `detail` says the quality loop
-  feature is not enabled marks the whole control plane as **disabled** (remaining environments are
-  skipped); a bare `403` marks that environment **read-only**; a `404` is treated as disabled
-  (older control planes). Results are cached per environment with the usual TTL
+  `GET .../integrations/github/integrations`. A `200` means the token can use the GitHub App
+  endpoints there and returns the connected repositories; a `403` whose problem `detail` says the
+  quality loop feature is not enabled marks the whole control plane as **disabled** (remaining
+  environments are skipped); a bare `403` marks that environment **forbidden** (the token cannot
+  access the endpoints there, e.g. an older control plane that still required the `run` role); a
+  `404` is treated as disabled (older control planes). Results are cached per environment with the usual TTL
   (`githubAppCache` in `chrome.storage.local`).
 - The current `owner/repo` is resolved to its numeric GitHub repository id via
   `GET .../integrations/github/repositories?q=owner/repo` through any capable environment
@@ -263,7 +264,7 @@ Endpoints used (all with `Authorization: Bearer <token>`), relative to the API b
 - `GET /organizations/{org}/environments/{env}/agent/test-workflows`
 - `GET /organizations/{org}/environments/{env}/agent/test-workflows/{name}/executions`
 
-GitHub App integration (only when enabled; need the `run` role):
+GitHub App integration (only when enabled; the environment `read` role suffices):
 
 - `GET /organizations/{org}/environments/{env}/integrations/github/integrations`
 - `GET /organizations/{org}/environments/{env}/integrations/github/repositories?q=owner/repo`

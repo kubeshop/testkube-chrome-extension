@@ -210,8 +210,9 @@ export interface ListExecutionIntegrationEventsResponse {
 }
 
 // What the token can do with the GitHub App endpoints in one environment.
-//  - available: the token has the run role (or higher) and the feature is on
-//  - read-only: the feature is on but the token only has read access here
+//  - available: the token can use the endpoints and the feature is on
+//  - forbidden: the feature is on but this token is denied here (e.g. an
+//               older control plane that still requires the run role)
 //  - disabled:  the control plane has the GitHub App feature turned off
 //  - error:     the probe failed for another reason (network, 5xx, ...)
-export type GithubAppCapability = 'available' | 'read-only' | 'disabled' | 'error';
+export type GithubAppCapability = 'available' | 'forbidden' | 'disabled' | 'error';
