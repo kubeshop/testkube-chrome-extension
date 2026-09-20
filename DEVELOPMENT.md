@@ -45,6 +45,30 @@ npm run build
 Runs `tsc --noEmit` (type-check) then `vite build`, producing a production bundle in `dist/` that can
 be loaded unpacked or zipped for distribution.
 
+### Releasing
+
+CI (`.github/workflows/ci.yml`) type-checks, builds and packages every pull request and push to
+`main`. To cut a release:
+
+1. Bump the version in `package.json` (`npm version 1.1.0 --no-git-tag-version`) and merge it.
+2. Tag the merge commit with the same version and push the tag:
+
+   ```bash
+   git tag v1.1.0 && git push origin v1.1.0
+   ```
+
+The release workflow (`.github/workflows/release.yml`) checks that the tag matches
+`package.json`, builds, runs `npm run package`, and creates a GitHub Release with the zip attached
+and auto-generated notes.
+
+When the Chrome Web Store listing exists, the same workflow can also upload the zip to the store
+as a draft (it never publishes). Configure a repository **variable** `CHROME_EXTENSION_ID` (the
+listing's id) and the **secrets** `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET` and
+`CHROME_REFRESH_TOKEN`, obtained by following the
+[Chrome Web Store API setup](https://developer.chrome.com/docs/webstore/using-api). Until the
+variable is set, the upload job is skipped. Publishing stays a manual step in the developer
+dashboard, so the listing text and review status can be checked first.
+
 ### Packaging for the Chrome Web Store
 
 ```bash

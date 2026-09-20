@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Type-checks and produces dist/; a package step proves the zip can be built.
+      - run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: testkube-for-github-*.zip
+          retention-days: 7
