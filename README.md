@@ -97,10 +97,10 @@ full `owner/repo` (e.g. `kubeshop/*`, `*/testkube*`, `my-org/my-repo`); `*` matc
 characters and `?` matches a single character. Leaving it empty means the extension only appears on
 auto-detected repos.
 
-**GitHub App integration** needs the API token to hold the **run** role (or higher) in an
-environment; with a read-only token the workflow panel still works but connection state and pull
-request results are skipped. The role is checked per environment, so a token can have PR results in
-some environments and not others. **Test connection** on the options page reports what is
+**GitHub App integration** works with any API token that can read an environment. It is checked
+per environment, so if the token cannot access the GitHub App endpoints in some environment (for
+example on an older control plane), the workflow panel still works there but connection state and
+pull request results are skipped. **Test connection** on the options page reports what is
 available. Turn the setting off to silence those requests entirely, for example on a control plane
 that does not have the GitHub App enabled.
 
