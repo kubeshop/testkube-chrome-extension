@@ -5,6 +5,10 @@ When you open a repo that is referenced by one or more Testkube TestWorkflows, t
 **"Test Results"** section to the repo sidebar showing how many workflows ran, their latest status,
 and deep links into the Testkube dashboard.
 
+> **Requirements:** a Testkube Control Plane, either Testkube Cloud or an on-prem deployment, and an
+> API token for it. The extension uses the Control Plane's organization, environment and GitHub App
+> APIs. See [testkube.io/get-started](https://testkube.io/get-started) to get a Control Plane.
+
 ## Features
 
 - **"Test Results" sidebar section** on the repo home / Code tab, styled to match GitHub's native
@@ -49,7 +53,7 @@ published), or load a build unpacked:
 
 1. Click the extension icon and open **Options** (or right-click the icon → **Options**).
 2. Paste your Testkube **API token** (see below).
-3. Adjust the **API base URL** / **Dashboard base URL** only if you use a self-managed control plane
+3. Adjust the **API base URL** / **Dashboard base URL** only if you use an on-prem Control Plane
    (defaults target Testkube Cloud).
 4. Optionally set an **auto-refresh interval** (seconds; `0` disables it).
 5. Click **Test connection** to verify — it reports the resolved organization and the number of
@@ -106,9 +110,9 @@ pull request results are skipped. **Test connection** on the options page report
 available. Turn the setting off to silence those requests entirely, for example on a control plane
 that does not have the GitHub App enabled.
 
-### Self-managed control planes
+### On-prem Control Planes
 
-Point the **API base URL** (and **Dashboard base URL**) at your own deployment. The first time you
+Point the **API base URL** (and **Dashboard base URL**) at your on-prem Control Plane. The first time you
 **Save** or **Test connection** with a non-default API host, Chrome asks once whether the extension
 may access that host; accept the prompt and the grant persists. If you decline, a notice under the
 field offers **Grant access** to try again, and the GitHub panel explains what is missing. No

@@ -22,7 +22,7 @@ h1 {
 }
 
 .subtitle {
-  margin: 0 0 20px;
+  margin: 0 0 8px;
   opacity: 0.75;
   font-size: 13px;
 }
@@ -180,4 +180,17 @@ h1 {
   flex: 0 0 auto;
   padding: 4px 10px;
   font-size: 12px;
+}
+
+.requirement {
+  margin: 0 0 20px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  background: rgba(140, 149, 159, 0.12);
+  border-radius: 6px;
+}
+
+.requirement a {
+  color: #0969da;
 }
