@@ -123,7 +123,7 @@ export interface PullRequestChild {
 }
 
 // The latest GitHub App run for one pull request in one environment. The
-// GitHub App's synthesized parent workflow (ql-parent-*) and its execution are
+// GitHub App's synthesized parent workflow and its execution are
 // an implementation detail and deliberately not exposed: only the child
 // workflow executions are linked.
 export interface PullRequestRun {

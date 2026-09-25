@@ -56,7 +56,7 @@ const GITHUB_CACHE_KEY = 'githubAppCache';
 // GitHub App's parent workflows are also recognized by name in case the
 // label is missing from the proxied object.
 const MANAGED_BY_LABEL = 'testkube.io/managed-by';
-const QUALITY_LOOP_PARENT_PREFIX = 'ql-parent-';
+const GITHUB_APP_PARENT_PREFIX = 'ql-parent-';
 
 // How many recent PR runs the repo sidebar lists, and how many event pages the
 // PR panel is willing to page through looking for a specific PR.
@@ -155,7 +155,7 @@ function getWorkflowName(workflow: unknown): string | undefined {
 
 function isSystemManaged(workflow: unknown): boolean {
   if (!workflow || typeof workflow !== 'object') return false;
-  if ((getWorkflowName(workflow) ?? '').startsWith(QUALITY_LOOP_PARENT_PREFIX)) return true;
+  if ((getWorkflowName(workflow) ?? '').startsWith(GITHUB_APP_PARENT_PREFIX)) return true;
   const obj = workflow as {
     labels?: Record<string, string>;
     metadata?: { labels?: Record<string, string> };

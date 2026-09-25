@@ -129,10 +129,11 @@ export async function getLatestExecution(
   return { status: latest?.result?.status, id: latest?.id };
 }
 
-// ---- GitHub App (Git Integration / quality loop) ---------------------------
+// ---- GitHub App (Git Integration) --------------------------------------------
 
-// Detail string the control plane puts on the 403 when the feature is off.
-const QUALITY_LOOP_DISABLED_DETAIL = 'quality loop feature is not enabled';
+// Detail text the control plane returns on the 403 when the GitHub App
+// feature is off (matched verbatim).
+const FEATURE_DISABLED_DETAIL = 'quality loop feature is not enabled';
 
 // Repositories connected to an environment through the GitHub App.
 export async function listGithubIntegrations(
@@ -166,7 +167,7 @@ export async function probeGithubApp(
   } catch (err) {
     if (err instanceof TestkubeError && err.status === 403) {
       const detail = (err.detail ?? '').toLowerCase();
-      if (detail.includes(QUALITY_LOOP_DISABLED_DETAIL)) {
+      if (detail.includes(FEATURE_DISABLED_DETAIL)) {
         return { capability: 'disabled', integrations: [], error: err.message };
       }
       return { capability: 'forbidden', integrations: [], error: err.message };

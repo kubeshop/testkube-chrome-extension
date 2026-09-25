@@ -133,12 +133,12 @@ GitHub repo page ──(owner/repo)──▶ content script
 ### GitHub App (Git Integration) support
 
 When the **GitHub App integration** setting is on, the worker also talks to the control plane's
-Git Integration endpoints (the ones behind the Testkube GitHub App / "quality loop"):
+Git Integration endpoints (the ones behind the Testkube GitHub App):
 
 - On each repo query it **probes every environment** with
   `GET .../integrations/github/integrations`. A `200` means the token can use the GitHub App
   endpoints there and returns the connected repositories; a `403` whose problem `detail` says the
-  quality loop feature is not enabled marks the whole control plane as **disabled** (remaining
+  feature is not enabled marks the whole control plane as **disabled** (remaining
   environments are skipped); a bare `403` marks that environment **forbidden** (the token cannot
   access the endpoints there, e.g. an older control plane that still required the `run` role); a
   `404` is treated as disabled (older control planes). Results are cached per environment with the usual TTL
@@ -158,9 +158,9 @@ Git Integration endpoints (the ones behind the Testkube GitHub App / "quality lo
   `GET .../executions/{executionId}/integration-events`. The PR panel compares that SHA with the
   PR's current head (the last `/pull/N/commits/<sha>` link in the timeline) and flags stale
   results. The panel is only injected when the repo is connected (or allowlisted).
-- Workflows carrying the `testkube.io/managed-by` label (the GitHub App's synthesized
-  `ql-parent-*` workflows, test catalog scaffolds) are hidden from the sidebar counts, matching
-  what the dashboard shows by default; `ql-parent-*` is also matched by name. The parent
+- Workflows carrying the `testkube.io/managed-by` label (the GitHub App's synthesized parent
+  workflows, test catalog scaffolds) are hidden from the sidebar counts, matching what the
+  dashboard shows by default; the parent workflows are also matched by their name prefix. The parent
   workflow's execution is never linked either: the PR panel and the recent-PR list only link to
   the child workflow executions, the AI analysis chat, and the repository page. The parent
   execution id is used solely to read the head SHA. Nothing links to the repository's
