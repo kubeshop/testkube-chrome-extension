@@ -21,8 +21,10 @@ and deep links into the Testkube dashboard.
 - **Refresh** — a refresh icon re-queries on demand, plus an optional auto-refresh interval.
 - **GitHub App integration** (when your control plane has the Testkube GitHub App enabled):
   - The sidebar shows whether the repo is **connected** through the GitHub App, with its
-    connection status and the last few **pull request runs**, each linking to the PR and, when
-    an AI analysis was performed for that run, straight to its chat.
+    connection status and the last few **pull request runs**. Hovering a PR number shows
+    GitHub's own card with the PR title; hovering the pass count (e.g. "3/4 passed") lists the
+    tests that ran for it, each linking to its execution. Runs with an AI analysis link straight
+    to its chat.
   - Repos that are not connected yet get a **Connect Testkube Bot** link straight into the
     dashboard's onboarding flow (preselecting the repo when the app is already installed on it).
   - **Pull request pages** get a **Testkube** sidebar panel with the latest run for that PR:

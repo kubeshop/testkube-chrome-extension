@@ -378,6 +378,12 @@ function recentPullRequests(
     eventStatus: e.status,
     overall: deriveOverall(e),
     aiSessionUrl: e.aiSessionId ? buildAiSessionUrl(s, orgId, envId, e.aiSessionId) : undefined,
+    children: (e.children ?? []).map((c) => ({
+      id: c.id,
+      workflowName: c.workflowName,
+      status: c.status,
+      url: buildExecutionDetailsUrl(s, orgId, envId, c.id),
+    })),
     updatedAt: e.updatedAt ?? e.createdAt,
   }));
 }

@@ -57,6 +57,8 @@ export interface RecentPullRequest {
   overall: TestWorkflowStatus;
   // The AI analysis chat for this run, when one was performed.
   aiSessionUrl?: string;
+  // Child workflow executions (the tests) of the run; never the parent.
+  children: PullRequestChild[];
   updatedAt: string;
 }
 
