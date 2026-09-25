@@ -7,9 +7,7 @@ and deep links into the Testkube dashboard.
 
 > **Requirements:** a Testkube Control Plane, either Testkube Cloud or an on-prem deployment, and an
 > API token for it. The extension uses the Control Plane's organization, environment and GitHub App
-> APIs, which Testkube Open Source (the standalone agent) does not provide, so it does not work with
-> an Open Source installation. See [testkube.io/get-started](https://testkube.io/get-started) to get a
-> Control Plane.
+> APIs. See [testkube.io/get-started](https://testkube.io/get-started) to get a Control Plane.
 
 ## Features
 
