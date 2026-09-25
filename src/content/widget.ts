@@ -1,5 +1,11 @@
 import { log } from '../lib/log';
-import type { MatchedWorkflow, MatchesResponse, RepoGithubConnection } from '../lib/messaging';
+import type {
+  MatchedWorkflow,
+  MatchesResponse,
+  PullRequestChild,
+  RecentPullRequest,
+  RepoGithubConnection,
+} from '../lib/messaging';
 import { timeAgo } from '../lib/time';
 import widgetCss from './widget.css?inline';
 
@@ -304,11 +310,17 @@ function buildGithubSection(connections: RepoGithubConnection[]): HTMLElement | 
         num.className = 'tk-gh-recent-num';
         num.href = pr.url;
         num.textContent = `#${pr.number}`;
-        num.title = `Pull request #${pr.number} (${pr.overall})`;
+        // GitHub's own hovercard (title, author, state) for the PR number.
+        const prPath = new URL(pr.url).pathname;
+        num.setAttribute('data-hovercard-type', 'pull_request');
+        num.setAttribute('data-hovercard-url', `${prPath}/hovercard`);
         const when = document.createElement('span');
         when.className = 'tk-gh-recent-when';
         when.textContent = timeAgo(pr.updatedAt);
-        li.append(octicon(statusKind(pr.overall)), num, when);
+        li.append(octicon(statusKind(pr.overall)), num);
+        const tests = buildRecentTests(pr);
+        if (tests) li.appendChild(tests);
+        li.appendChild(when);
         if (pr.aiSessionUrl) {
           const ai = externalLink(pr.aiSessionUrl, 'AI analysis');
           ai.className = 'tk-gh-recent-ai';
@@ -321,6 +333,50 @@ function buildGithubSection(connections: RepoGithubConnection[]): HTMLElement | 
     }
   }
   return wrap;
+}
+
+// "3/4 passed" for a recent PR run, with a hover popover listing its tests.
+function buildRecentTests(pr: RecentPullRequest): HTMLElement | null {
+  if (pr.children.length === 0) return null;
+  const passed = pr.children.filter((c) => statusKind(c.status) === 'passed').length;
+  const summary = document.createElement('span');
+  summary.className = 'tk-gh-recent-tests';
+  summary.tabIndex = 0;
+  summary.textContent = `${passed}/${pr.children.length} passed`;
+  const noun = `test workflow${pr.children.length === 1 ? '' : 's'}`;
+  attachPopover(
+    summary,
+    buildChildrenPopover(`PR #${pr.number} \u00b7 ${pr.children.length} ${noun}`, pr.children),
+  );
+  return summary;
+}
+
+function buildChildrenPopover(titleText: string, children: PullRequestChild[]): HTMLElement {
+  const popover = document.createElement('div');
+  popover.className = 'tk-gh-popover';
+  const title = document.createElement('div');
+  title.className = 'tk-gh-popover-title';
+  title.textContent = titleText;
+  popover.appendChild(title);
+
+  const list = document.createElement('ul');
+  list.className = 'tk-gh-list';
+  for (const c of children) {
+    const li = document.createElement('li');
+    li.className = 'tk-gh-item';
+    const main = document.createElement('div');
+    main.className = 'tk-gh-item-main';
+    const link = externalLink(c.url, c.workflowName);
+    link.title = c.workflowName;
+    const status = document.createElement('span');
+    status.className = 'tk-gh-item-status';
+    status.textContent = c.status ?? 'queued';
+    main.append(octicon(statusKind(c.status)), link, status);
+    li.appendChild(main);
+    list.appendChild(li);
+  }
+  popover.appendChild(list);
+  return popover;
 }
 
 export function externalLink(href: string, text: string): HTMLAnchorElement {

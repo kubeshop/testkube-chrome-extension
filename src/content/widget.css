@@ -384,6 +384,21 @@
   color: var(--fgColor-muted, #8c959f);
 }
 
+.tk-gh-recent-tests {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--fgColor-muted, #656d76);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: default;
+}
+
+.tk-gh-recent-tests:hover,
+.tk-gh-recent-tests:focus-visible {
+  color: var(--fgColor-accent, #0969da);
+  outline: none;
+}
+
 .tk-gh-recent-ai {
   flex: 0 0 auto;
   font-size: 11px;
