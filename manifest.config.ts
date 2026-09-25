@@ -1,4 +1,5 @@
-import { defineManifest } from '@crxjs/vite-plugin';
+import {defineManifest} from '@crxjs/vite-plugin';
+
 import pkg from './package.json';
 
 // The Testkube Cloud API is allowed up front. Any other API base URL (a

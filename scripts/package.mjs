@@ -1,13 +1,13 @@
 // Zip the contents of dist/ (not the folder itself) into
 // testkube-for-github-<version>.zip, the shape the Chrome Web Store accepts.
 // Pure Node so it runs on any platform without `zip` or a POSIX shell.
-import { readdirSync, readFileSync, statSync, writeFileSync, rmSync, existsSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
-import { zipSync } from 'fflate';
+import {zipSync} from 'fflate';
+import {existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from 'node:fs';
+import {join, relative, sep} from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
 const dist = join(root, 'dist');
-const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const {version} = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const out = join(root, `testkube-for-github-${version}.zip`);
 
 if (!existsSync(join(dist, 'manifest.json'))) {
@@ -25,6 +25,6 @@ function walk(dir) {
 }
 walk(dist);
 
-rmSync(out, { force: true });
-writeFileSync(out, zipSync(files, { level: 9 }));
+rmSync(out, {force: true});
+writeFileSync(out, zipSync(files, {level: 9}));
 console.log(`wrote ${relative(root, out)} (${Object.keys(files).length} files)`);

@@ -67,7 +67,7 @@ export interface TestWorkflowExecutionsResult {
   results?: TestWorkflowExecutionSummary[];
 }
 
-// ---- GitHub App (Git Integration / quality loop) shapes ---------------------
+// ---- GitHub App (Git Integration) shapes ---------------------------------------
 
 // A repository reachable through one of the organization's GitHub App
 // installations (GET .../integrations/github/repositories).
@@ -129,13 +129,7 @@ export type GithubEventKind =
   | 'repository_onboarding'
   | (string & {});
 
-export type GithubEventStatus =
-  | 'received'
-  | 'processing'
-  | 'completed'
-  | 'failed'
-  | 'skipped'
-  | (string & {});
+export type GithubEventStatus = 'received' | 'processing' | 'completed' | 'failed' | 'skipped' | (string & {});
 
 export interface GithubEventChildExecution {
   id: string;

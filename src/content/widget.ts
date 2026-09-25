@@ -1,4 +1,4 @@
-import { log } from '../lib/log';
+import {log} from '../lib/log';
 import type {
   MatchedWorkflow,
   MatchesResponse,
@@ -6,7 +6,8 @@ import type {
   RecentPullRequest,
   RepoGithubConnection,
 } from '../lib/messaging';
-import { timeAgo } from '../lib/time';
+import {timeAgo} from '../lib/time';
+
 import widgetCss from './widget.css?inline';
 
 export const HOST_ID = 'testkube-gh-widget-host';
@@ -167,8 +168,7 @@ export function renderWidget(res: MatchesResponse): void {
   const content = buildContent(res);
   const total = res.configured && res.ok ? visibleMatches(res).length : 0;
   const showRefresh = res.configured && res.ok;
-  const headerUrl =
-    res.configured && res.ok ? (currentDashboardUrl(res) ?? res.dashboardUrl) : undefined;
+  const headerUrl = res.configured && res.ok ? (currentDashboardUrl(res) ?? res.dashboardUrl) : undefined;
   const envName = res.configured && res.ok ? selectedEnvName(res) : undefined;
   const headerTooltip = envName
     ? `Test Workflows in the ${envName} Testkube Environment that run tests in this repository`
@@ -183,13 +183,13 @@ export function renderWidget(res: MatchesResponse): void {
 // The environment to show: the current selection if still present, else the one
 // with the most matches.
 function effectiveEnvId(res: MatchesResponse): string {
-  if (selectedEnvId && res.environments.some((e) => e.id === selectedEnvId)) return selectedEnvId;
+  if (selectedEnvId && res.environments.some(e => e.id === selectedEnvId)) return selectedEnvId;
   return [...res.environments].sort((a, b) => b.matchCount - a.matchCount)[0]?.id ?? '';
 }
 
 // Matches limited to the currently selected environment.
 function visibleMatches(res: MatchesResponse): MatchedWorkflow[] {
-  return res.matches.filter((m) => m.environmentId === selectedEnvId);
+  return res.matches.filter(m => m.environmentId === selectedEnvId);
 }
 
 // A grey count rendered after the "Tests Executed" label, mirroring how GitHub
@@ -263,8 +263,8 @@ function buildNotConnectedSection(res: MatchesResponse): HTMLElement | null {
 // when the selection is not one of the connected environments).
 function visibleConnections(res: MatchesResponse): RepoGithubConnection[] {
   const all = res.github?.connections ?? [];
-  const forEnv = all.filter((c) => c.environmentId === selectedEnvId);
-  return forEnv.length > 0 || res.environments.some((e) => e.id === selectedEnvId) ? forEnv : all;
+  const forEnv = all.filter(c => c.environmentId === selectedEnvId);
+  return forEnv.length > 0 || res.environments.some(e => e.id === selectedEnvId) ? forEnv : all;
 }
 
 // Connection state + recent pull request runs from the GitHub App.
@@ -338,16 +338,13 @@ function buildGithubSection(connections: RepoGithubConnection[]): HTMLElement | 
 // "3/4 passed" for a recent PR run, with a hover popover listing its tests.
 function buildRecentTests(pr: RecentPullRequest): HTMLElement | null {
   if (pr.children.length === 0) return null;
-  const passed = pr.children.filter((c) => statusKind(c.status) === 'passed').length;
+  const passed = pr.children.filter(c => statusKind(c.status) === 'passed').length;
   const summary = document.createElement('span');
   summary.className = 'tk-gh-recent-tests';
   summary.tabIndex = 0;
   summary.textContent = `${passed}/${pr.children.length} passed`;
   const noun = `test workflow${pr.children.length === 1 ? '' : 's'}`;
-  attachPopover(
-    summary,
-    buildChildrenPopover(`PR #${pr.number} \u00b7 ${pr.children.length} ${noun}`, pr.children),
-  );
+  attachPopover(summary, buildChildrenPopover(`PR #${pr.number} \u00b7 ${pr.children.length} ${noun}`, pr.children));
   return summary;
 }
 
@@ -428,16 +425,16 @@ function buildEmptyState(res: MatchesResponse): HTMLElement {
 
 // Dashboard URL for the selected environment (used by the header title link).
 function currentDashboardUrl(res: MatchesResponse): string | undefined {
-  return res.environments.find((e) => e.id === selectedEnvId)?.dashboardUrl;
+  return res.environments.find(e => e.id === selectedEnvId)?.dashboardUrl;
 }
 
 // Executions list URL for the selected environment (used by the status labels).
 function currentExecutionsUrl(res: MatchesResponse): string | undefined {
-  return res.environments.find((e) => e.id === selectedEnvId)?.executionsUrl;
+  return res.environments.find(e => e.id === selectedEnvId)?.executionsUrl;
 }
 
 function selectedEnvName(res: MatchesResponse): string | undefined {
-  return res.environments.find((e) => e.id === selectedEnvId)?.name;
+  return res.environments.find(e => e.id === selectedEnvId)?.name;
 }
 
 function buildEnvironmentSelect(res: MatchesResponse): HTMLElement {
@@ -473,12 +470,12 @@ function buildNotice(detail: string): HTMLElement {
 
 // Status buckets shown in the summary, in display order. `passed` and `failed`
 // are always shown; the rest only appear when there is at least one workflow.
-const SUMMARY_ORDER: Array<{ kind: StatusKind; label: string; always: boolean }> = [
-  { kind: 'passed', label: 'passed', always: true },
-  { kind: 'failed', label: 'failed', always: true },
-  { kind: 'aborted', label: 'aborted', always: false },
-  { kind: 'canceled', label: 'cancelled', always: false },
-  { kind: 'running', label: 'running', always: false },
+const SUMMARY_ORDER: Array<{kind: StatusKind; label: string; always: boolean}> = [
+  {kind: 'passed', label: 'passed', always: true},
+  {kind: 'failed', label: 'failed', always: true},
+  {kind: 'aborted', label: 'aborted', always: false},
+  {kind: 'canceled', label: 'cancelled', always: false},
+  {kind: 'running', label: 'running', always: false},
 ];
 
 function buildSummary(matches: MatchedWorkflow[], executionsUrl?: string): HTMLElement {
@@ -493,7 +490,7 @@ function buildSummary(matches: MatchedWorkflow[], executionsUrl?: string): HTMLE
   const summary = document.createElement('div');
   summary.className = 'tk-gh-summary';
 
-  for (const { kind, label, always } of SUMMARY_ORDER) {
+  for (const {kind, label, always} of SUMMARY_ORDER) {
     const items = groups.get(kind) ?? [];
     if (items.length === 0 && !always) continue;
 
@@ -610,12 +607,7 @@ function statusExecutionsUrl(executionsUrl: string | undefined, kind: StatusKind
   return viewId ? `${executionsUrl}/views/${viewId}` : executionsUrl;
 }
 
-function buildStat(
-  kind: StatusKind,
-  count: number,
-  label: string,
-  executionsUrl?: string,
-): HTMLElement {
+function buildStat(kind: StatusKind, count: number, label: string, executionsUrl?: string): HTMLElement {
   const stat = document.createElement('span');
   stat.className = 'tk-gh-stat';
 
@@ -697,12 +689,12 @@ function injectIntoSidebar(
   total: number,
   showRefresh: boolean,
   headerUrl?: string,
-  headerTooltip?: string,
+  headerTooltip?: string
 ): boolean {
   const found = findAnchorHeading();
   if (!found) return false;
 
-  const { heading, wrapper } = found;
+  const {heading, wrapper} = found;
   const cell = heading.parentElement;
   if (!cell || !wrapper.parentElement) return false;
 
@@ -747,12 +739,12 @@ function injectIntoSidebar(
   return true;
 }
 
-function findAnchorHeading(): { heading: HTMLElement; wrapper: HTMLElement } | null {
+function findAnchorHeading(): {heading: HTMLElement; wrapper: HTMLElement} | null {
   const headings = Array.from(document.querySelectorAll<HTMLElement>('h2, h3'));
   for (const target of ANCHOR_HEADINGS) {
     // Section headings often include a count (e.g. "Releases 93"), so match on
     // the first word rather than the full text.
-    const heading = headings.find((h) => {
+    const heading = headings.find(h => {
       const text = (h.textContent ?? '').trim();
       return text === target || text.split(/\s+/)[0] === target;
     });
@@ -763,7 +755,7 @@ function findAnchorHeading(): { heading: HTMLElement; wrapper: HTMLElement } | n
       heading.parentElement;
     if (wrapper) {
       log(`anchor heading "${target}" found`);
-      return { heading, wrapper };
+      return {heading, wrapper};
     }
   }
   return null;
