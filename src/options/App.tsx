@@ -114,8 +114,8 @@ export function App() {
     <div className="card">
       <h1>Testkube for GitHub</h1>
       <p className="subtitle">
-        Connect to your Testkube Control Plane (Cloud or on-prem) to surface TestWorkflows on the GitHub repositories
-        they test.
+        Connect to your Testkube Control Plane (Cloud or on-prem) to surface TestWorkflow results on the GitHub
+        repositories that contain the tests they run.
       </p>
       <p className="requirement">
         Requires a Testkube Control Plane. Don't have one?{' '}

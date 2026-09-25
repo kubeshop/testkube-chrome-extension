@@ -449,7 +449,7 @@ async function handleGetMatches(owner: string, repo: string, force: boolean): Pr
     const sig = cacheSignature(settings);
     const entries = force ? {} : await loadWorkflowEntries(sig);
 
-    // Scan each accessible environment for workflows testing this repo. The cache
+    // Scan each accessible environment for workflows running tests from this repo. The cache
     // is mutated in memory here and persisted once after the loop to avoid
     // concurrent read-modify-write races across env workers.
     await mapWithConcurrency(environments, ENV_CONCURRENCY, async env => {

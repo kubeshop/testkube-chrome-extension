@@ -211,7 +211,7 @@ function buildContent(res: MatchesResponse): HTMLElement {
     return buildNotice(res.error ?? 'Failed to query Testkube.');
   }
 
-  // No workflow tests this repo yet: encourage the user to create/connect one.
+  // No workflow runs tests from this repo yet: encourage the user to create/connect one.
   if (res.matches.length === 0) {
     return buildEmptyState(res);
   }
