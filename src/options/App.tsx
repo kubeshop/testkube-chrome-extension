@@ -119,8 +119,8 @@ export function App() {
       </p>
       <p className="requirement">
         Requires a Testkube Control Plane; Testkube Open Source is not supported. Don't have one?{' '}
-        <a href="https://testkube.io/pricing" target="_blank" rel="noopener noreferrer">
-          See Testkube pricing
+        <a href="https://testkube.io/get-started" target="_blank" rel="noopener noreferrer">
+          Get started with Testkube
         </a>
         .
       </p>

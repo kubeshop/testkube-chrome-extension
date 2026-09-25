@@ -19,7 +19,7 @@ Testkube for GitHub brings your Testkube test results to the place you review co
 
 Requirements: a Testkube Control Plane, either Testkube Cloud or an on-prem deployment, and an API
 token for it. The extension does not work with Testkube Open Source (the standalone agent), which
-does not provide the Control Plane APIs it uses. See https://testkube.io/pricing to get a Control
+does not provide the Control Plane APIs it uses. See https://testkube.io/get-started to get a Control
 Plane.
 
 On any GitHub repository that a Testkube TestWorkflow tests, a **Test Results** section appears in
