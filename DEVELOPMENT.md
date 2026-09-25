@@ -173,15 +173,11 @@ Git Integration endpoints (the ones behind the Testkube GitHub App):
   `GET .../executions/{executionId}/integration-events`. The PR panel compares that SHA with the
   PR's current head (the last `/pull/N/commits/<sha>` link in the timeline) and flags stale
   results. The panel is only injected when the repo is connected (or allowlisted).
-- Workflows carrying the `testkube.io/managed-by` label (the GitHub App's synthesized parent
-  workflows, test catalog scaffolds) are hidden from the sidebar counts, matching what the
-  dashboard shows by default; the parent workflows are also matched by their name prefix. The parent
-  workflow's execution is never linked either: the PR panel and the recent-PR list only link to
-  the child workflow executions, the AI analysis chat, and the repository page. The parent
-  execution id is used solely to read the head SHA. Nothing links to the repository's
-  integration page in the dashboard either (the extension surfaces results, not integration
-  management); the only dashboard entry points are the environment/executions links, the AI
-  analysis chat, and the onboarding flow for repos that are not connected yet.
+- The PR panel and the recent-PR list link to the test workflow executions of a run and to the
+  AI analysis chat. Nothing links to the repository's integration page in the dashboard (the
+  extension surfaces results, not integration management); the only dashboard entry points are
+  the environment/executions links, the AI analysis chat, and the onboarding flow for repos that
+  are not connected yet.
 
 Dashboard deep link added for this: the AI analysis chat `…/dashboard/chats/{sessionId}`.
 

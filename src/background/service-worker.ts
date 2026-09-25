@@ -5,9 +5,9 @@ import type {
   MatchedEnvironment,
   MatchedWorkflow,
   MatchesResponse,
-  PullRequestChild,
   PullRequestResponse,
   PullRequestRun,
+  PullRequestTest,
   RecentPullRequest,
   RepoGithubConnection,
   RepoGithubInfo,
@@ -43,14 +43,6 @@ const ENV_CONCURRENCY = 4;
 const DISCOVERY_CACHE_KEY = 'discoveryCache';
 const WORKFLOWS_CACHE_KEY = 'workflowsCache';
 const GITHUB_CACHE_KEY = 'githubAppCache';
-
-// Label the control plane stamps on workflows a system component owns (the
-// GitHub App's synthesized parent workflows, test catalog scaffolds, ...). The
-// dashboard hides these by default; the agent proxy does not, so we do. The
-// GitHub App's parent workflows are also recognized by name in case the
-// label is missing from the proxied object.
-const MANAGED_BY_LABEL = 'testkube.io/managed-by';
-const GITHUB_APP_PARENT_PREFIX = 'ql-parent-';
 
 // How many recent PR runs the repo sidebar lists, and how many event pages the
 // PR panel is willing to page through looking for a specific PR.
@@ -141,17 +133,6 @@ function getWorkflowName(workflow: unknown): string | undefined {
   if (!workflow || typeof workflow !== 'object') return undefined;
   const obj = workflow as {name?: string; metadata?: {name?: string}};
   return obj.name ?? obj.metadata?.name;
-}
-
-function isSystemManaged(workflow: unknown): boolean {
-  if (!workflow || typeof workflow !== 'object') return false;
-  if ((getWorkflowName(workflow) ?? '').startsWith(GITHUB_APP_PARENT_PREFIX)) return true;
-  const obj = workflow as {
-    labels?: Record<string, string>;
-    metadata?: {labels?: Record<string, string>};
-  };
-  const labels = obj.labels ?? obj.metadata?.labels;
-  return Boolean(labels && typeof labels === 'object' && MANAGED_BY_LABEL in labels);
 }
 
 // ---- Dashboard URLs ---------------------------------------------------------
@@ -315,12 +296,12 @@ async function resolveRepositoryId(
   return repositoryId || undefined;
 }
 
-// Overall test status of a PR run, from its child executions when it has
-// fanned out, else from the pipeline status of the event itself.
+// Overall test status of a PR run, from its test executions once they have
+// started, else from the pipeline status of the event itself.
 function deriveOverall(event: GithubRepositoryIntegrationEvent): TestWorkflowStatus {
-  const children = event.children ?? [];
-  if (children.length > 0) {
-    const statuses = children.map(c => (c.status ?? '').toLowerCase());
+  const tests = event.children ?? [];
+  if (tests.length > 0) {
+    const statuses = tests.map(c => (c.status ?? '').toLowerCase());
     if (statuses.some(st => st === 'failed' || st === 'timeout')) return 'failed';
     if (statuses.some(st => ['running', 'queued', 'assigned', 'paused', ''].includes(st))) return 'running';
     if (statuses.some(st => st === 'aborted' || st === 'aborting')) return 'aborted';
@@ -366,7 +347,7 @@ function recentPullRequests(
     eventStatus: e.status,
     overall: deriveOverall(e),
     aiSessionUrl: e.aiSessionId ? buildAiSessionUrl(s, orgId, envId, e.aiSessionId) : undefined,
-    children: (e.children ?? []).map(c => ({
+    tests: (e.children ?? []).map(c => ({
       id: c.id,
       workflowName: c.workflowName,
       status: c.status,
@@ -488,10 +469,8 @@ async function handleGetMatches(owner: string, repo: string, force: boolean): Pr
       }
       log(`env "${env.name}": ${workflows.length} workflow(s)`);
 
+      // The control plane already leaves out system-managed workflows.
       for (const wf of workflows) {
-        // Hide system-owned workflows (e.g. the GitHub App's parent workflow),
-        // matching what the dashboard shows by default.
-        if (isSystemManaged(wf)) continue;
         const {matches, gitUris, paths} = workflowMatchesRepo(wf, repoRef);
         if (!matches) {
           if (matched.length === 0) for (const uri of extractGitUris(wf)) allUris.add(uri);
@@ -661,9 +640,8 @@ async function handleGetPullRequest(
       }
       if (!event) return;
 
-      // The event list does not carry the head SHA; the parent execution's own
-      // event context does (read only, never linked). Best effort: the panel
-      // still renders without it.
+      // The event list does not carry the head SHA; the run's integration
+      // event context does. Best effort: the panel still renders without it.
       let headSha: string | undefined;
       if (event.executionId) {
         try {
@@ -675,7 +653,7 @@ async function handleGetPullRequest(
         }
       }
 
-      const children: PullRequestChild[] = (event.children ?? []).map(c => ({
+      const tests: PullRequestTest[] = (event.children ?? []).map(c => ({
         id: c.id,
         workflowName: c.workflowName,
         status: c.status,
@@ -695,7 +673,7 @@ async function handleGetPullRequest(
         qualityGates: event.qualityGates ?? [],
         lastMessage: event.lastMessage,
         aiSessionUrl: event.aiSessionId ? buildAiSessionUrl(settings, orgId, env.id, event.aiSessionId) : undefined,
-        children,
+        tests,
         overall: deriveOverall(event),
       });
     });

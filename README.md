@@ -33,7 +33,7 @@ and deep links into the Testkube dashboard.
     dashboard's onboarding flow (preselecting the repo when the app is already installed on it).
   - **Pull request pages** get a **Testkube** sidebar panel with the latest run for that PR:
     overall status, the head commit it ran for (flagged **stale** when the PR has moved on), one
-    row per child workflow execution, quality gates, and a link to the AI analysis chat when one
+    row per test workflow execution, quality gates, and a link to the AI analysis chat when one
     was performed.
 
 The organization and the environments your token can access are discovered automatically — you only

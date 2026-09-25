@@ -2,7 +2,7 @@ import {log} from '../lib/log';
 import type {
   MatchedWorkflow,
   MatchesResponse,
-  PullRequestChild,
+  PullRequestTest,
   RecentPullRequest,
   RepoGithubConnection,
 } from '../lib/messaging';
@@ -337,18 +337,18 @@ function buildGithubSection(connections: RepoGithubConnection[]): HTMLElement | 
 
 // "3/4 passed" for a recent PR run, with a hover popover listing its tests.
 function buildRecentTests(pr: RecentPullRequest): HTMLElement | null {
-  if (pr.children.length === 0) return null;
-  const passed = pr.children.filter(c => statusKind(c.status) === 'passed').length;
+  if (pr.tests.length === 0) return null;
+  const passed = pr.tests.filter(c => statusKind(c.status) === 'passed').length;
   const summary = document.createElement('span');
   summary.className = 'tk-gh-recent-tests';
   summary.tabIndex = 0;
-  summary.textContent = `${passed}/${pr.children.length} passed`;
-  const noun = `test workflow${pr.children.length === 1 ? '' : 's'}`;
-  attachPopover(summary, buildChildrenPopover(`PR #${pr.number} \u00b7 ${pr.children.length} ${noun}`, pr.children));
+  summary.textContent = `${passed}/${pr.tests.length} passed`;
+  const noun = `test workflow${pr.tests.length === 1 ? '' : 's'}`;
+  attachPopover(summary, buildTestsPopover(`PR #${pr.number} \u00b7 ${pr.tests.length} ${noun}`, pr.tests));
   return summary;
 }
 
-function buildChildrenPopover(titleText: string, children: PullRequestChild[]): HTMLElement {
+function buildTestsPopover(titleText: string, tests: PullRequestTest[]): HTMLElement {
   const popover = document.createElement('div');
   popover.className = 'tk-gh-popover';
   const title = document.createElement('div');
@@ -358,7 +358,7 @@ function buildChildrenPopover(titleText: string, children: PullRequestChild[]): 
 
   const list = document.createElement('ul');
   list.className = 'tk-gh-list';
-  for (const c of children) {
+  for (const c of tests) {
     const li = document.createElement('li');
     li.className = 'tk-gh-item';
     const main = document.createElement('div');

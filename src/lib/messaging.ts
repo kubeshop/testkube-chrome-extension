@@ -53,12 +53,12 @@ export interface RecentPullRequest {
   url: string;
   // Pipeline status of the webhook event (received/processing/completed/...).
   eventStatus: GithubEventStatus;
-  // Overall test status derived from the child executions (or the event).
+  // Overall test status derived from the test executions (or the event).
   overall: TestWorkflowStatus;
   // The AI analysis chat for this run, when one was performed.
   aiSessionUrl?: string;
-  // Child workflow executions (the tests) of the run; never the parent.
-  children: PullRequestChild[];
+  // Test workflow executions of the run.
+  tests: PullRequestTest[];
   updatedAt: string;
 }
 
@@ -115,17 +115,14 @@ export interface MatchesResponse {
   error?: string;
 }
 
-export interface PullRequestChild {
+export interface PullRequestTest {
   id: string;
   workflowName: string;
   status?: TestWorkflowStatus;
   url: string;
 }
 
-// The latest GitHub App run for one pull request in one environment. The
-// GitHub App's synthesized parent workflow and its execution are
-// an implementation detail and deliberately not exposed: only the child
-// workflow executions are linked.
+// The latest GitHub App run for one pull request in one environment.
 export interface PullRequestRun {
   environmentId: string;
   environmentName: string;
@@ -140,7 +137,7 @@ export interface PullRequestRun {
   qualityGates: QualityGate[];
   lastMessage?: string;
   aiSessionUrl?: string;
-  children: PullRequestChild[];
+  tests: PullRequestTest[];
   overall: TestWorkflowStatus;
 }
 

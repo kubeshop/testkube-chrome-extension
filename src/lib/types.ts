@@ -131,7 +131,7 @@ export type GithubEventKind =
 
 export type GithubEventStatus = 'received' | 'processing' | 'completed' | 'failed' | 'skipped' | (string & {});
 
-export interface GithubEventChildExecution {
+export interface GithubEventTestExecution {
   id: string;
   workflowName: string;
   status?: TestWorkflowStatus;
@@ -152,7 +152,8 @@ export interface GithubRepositoryIntegrationEvent {
   qualityGates?: QualityGate[];
   lastMessage?: string;
   aiSessionId?: string;
-  children?: GithubEventChildExecution[];
+  // Test workflow executions started for this event (API field name).
+  children?: GithubEventTestExecution[];
   createdAt: string;
   updatedAt: string;
 }

@@ -45,7 +45,7 @@ Features
 - Test Results sidebar section on repository pages, styled like GitHub's own sections
 - Per-status hover popovers with links to the latest execution of each workflow
 - Environment switcher when results span several Testkube environments
-- Pull request panel with the latest GitHub App run, child executions, and quality gates
+- Pull request panel with the latest GitHub App run, its test executions, and quality gates
 - Recent pull request runs on the repository page
 - Manual refresh and optional auto-refresh
 - Works with the Testkube Control Plane, Cloud or on-prem
