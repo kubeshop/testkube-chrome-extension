@@ -6,7 +6,9 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 ## Product details
 
 - **Name:** Testkube for GitHub
-- **Summary** (from the manifest, max 132 chars): Surfaces Testkube TestWorkflow Results on GitHub repos and Pull Requests. Requires a Testkube Control Plane (Cloud or on-prem).
+- **Summary** (from the manifest's `description`, max 132 chars): Surfaces Testkube TestWorkflow Results on the GitHub repositories and Pull Requests they test.
+  The store shows this line as-is, so the Control Plane requirement is stated in the detailed
+  description below instead.
 - **Category:** Developer Tools
 - **Language:** English
 - **Homepage / support:** <https://github.com/kubeshop/testkube-chrome-extension>
@@ -17,8 +19,8 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 
 Testkube for GitHub brings your Testkube test results to the place you review code.
 
-Requirements: a Testkube Control Plane, either Testkube Cloud or an on-prem deployment, and an API
-token for it. See https://testkube.io/get-started to get a Control Plane.
+Requires a Testkube Control Plane (Cloud or on-prem) and an API token for it. See
+https://testkube.io/get-started to get a Control Plane.
 
 On any GitHub repository that a Testkube TestWorkflow tests, a **Test Results** section appears in
 the repository sidebar: how many workflows ran, their latest status (passed, failed, aborted,

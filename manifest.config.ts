@@ -8,8 +8,7 @@ import pkg from './package.json';
 export default defineManifest({
   manifest_version: 3,
   name: 'Testkube for GitHub',
-  description:
-    'Surfaces Testkube TestWorkflow Results on GitHub repos and Pull Requests. Requires a Testkube Control Plane (Cloud or on-prem).',
+  description: 'Surfaces Testkube TestWorkflow Results on the GitHub repositories and Pull Requests they test.',
   version: pkg.version,
   homepage_url: 'https://github.com/kubeshop/testkube-chrome-extension',
   icons: {
