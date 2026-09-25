@@ -317,16 +317,19 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.githubAppIntegration) {
     githubAppEnabled = changes.githubAppIntegration.newValue !== false;
   }
-  // A different control plane, dashboard, or GitHub App setting changes what
-  // (and where) the panels link to: fetch and render fresh data.
-  if (changes.apiBaseUrl || changes.dashboardBaseUrl || changes.githubAppIntegration) {
-    requery();
-  }
   if (changes.repoFilters) {
     repoFilters = Array.isArray(changes.repoFilters.newValue)
       ? (changes.repoFilters.newValue as string[])
       : [];
-    // Re-evaluate the current page against the updated allowlist.
+  }
+  // Apply every changed value above before refreshing, so a single save that
+  // touches several settings is evaluated with all of them. A different
+  // control plane, dashboard, or GitHub App setting changes what (and where)
+  // the panels link to: fetch fresh data. A pattern change alone only needs
+  // the current page re-evaluated against the new allowlist.
+  if (changes.apiBaseUrl || changes.dashboardBaseUrl || changes.githubAppIntegration) {
+    requery();
+  } else if (changes.repoFilters) {
     void update();
   }
 });
