@@ -469,20 +469,20 @@
   color: var(--fgColor-muted, #8c959f);
 }
 
-.tk-gh-pr-children {
+.tk-gh-pr-tests {
   list-style: none;
   margin: 4px 0 0;
   padding: 0;
 }
 
-.tk-gh-pr-child {
+.tk-gh-pr-test {
   display: flex;
   align-items: center;
   gap: 6px;
   line-height: 1.8;
 }
 
-.tk-gh-pr-child .tk-gh-link {
+.tk-gh-pr-test .tk-gh-link {
   font-weight: 500;
 }
 

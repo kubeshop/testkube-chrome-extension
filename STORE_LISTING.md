@@ -6,7 +6,9 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 ## Product details
 
 - **Name:** Testkube for GitHub
-- **Summary** (from the manifest, max 132 chars): Surfaces Testkube TestWorkflow Results on GitHub repos and Pull Requests. Requires a Testkube Control Plane (Cloud or on-prem).
+- **Summary** (from the manifest's `description`, max 132 chars): Surfaces Testkube TestWorkflow Results on the GitHub repositories and Pull Requests containing the tests they run.
+  The store shows this line as-is, so the Control Plane requirement is stated in the detailed
+  description below instead.
 - **Category:** Developer Tools
 - **Language:** English
 - **Homepage / support:** <https://github.com/kubeshop/testkube-chrome-extension>
@@ -15,22 +17,20 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 
 ## Detailed description
 
-Testkube for GitHub brings your Testkube test results to the place you review code.
+On any GitHub repository that contains tests executed by a Testkube TestWorkflow, a Test Results
+section appears in the repository sidebar: how many workflows ran, their latest status (passed,
+failed, aborted, cancelled, running), and deep links into the Testkube dashboard. Hover a status to
+see the workflows behind it and jump straight to their most recent execution.
 
-Requirements: a Testkube Control Plane, either Testkube Cloud or an on-prem deployment, and an API
-token for it. See https://testkube.io/get-started to get a Control Plane.
+Requires a Testkube Control Plane (Cloud or on-prem) and an API token for it. See
+https://testkube.io/get-started to get a Control Plane.
 
-On any GitHub repository that a Testkube TestWorkflow tests, a **Test Results** section appears in
-the repository sidebar: how many workflows ran, their latest status (passed, failed, aborted,
-cancelled, running), and deep links into the Testkube dashboard. Hover a status to see the
-workflows behind it and jump straight to their most recent execution.
-
-If the repository is connected through the **Testkube GitHub App**, the sidebar also shows the
-connection status and recent pull request runs, and the **pull request conversation tab** gets a
+If the repository is connected through the Testkube GitHub App, the sidebar also shows the
+connection status and recent pull request runs, and the pull request conversation tab gets a
 Testkube panel with the latest run for that PR: overall status, the commit it ran for (flagged when
 the PR has moved on), one row per workflow execution, quality gates, and a link to the AI analysis
 when one was performed. Repositories that are not connected yet get a one-click link to connect
-them. The GitHub App features require the Testkube GitHub App to be enabled on your control plane
+them. The GitHub App features require the Testkube GitHub App to be enabled on your Control Plane
 and an API token with access to its integration endpoints; otherwise the extension shows workflow
 results only.
 
@@ -43,14 +43,14 @@ Features
 - Test Results sidebar section on repository pages, styled like GitHub's own sections
 - Per-status hover popovers with links to the latest execution of each workflow
 - Environment switcher when results span several Testkube environments
-- Pull request panel with the latest GitHub App run, child executions, and quality gates
+- Pull request panel with the latest GitHub App run, its test executions, and quality gates
 - Recent pull request runs on the repository page
 - Manual refresh and optional auto-refresh
 - Works with the Testkube Control Plane, Cloud or on-prem
 
 Privacy
 
-The extension talks only to the Testkube control plane you configure. Your API token stays in your
+The extension talks only to the Testkube Control Plane you configure. Your API token stays in your
 browser. No analytics, no third parties.
 
 ## Single purpose

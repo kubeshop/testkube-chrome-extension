@@ -9,7 +9,7 @@ export default defineManifest({
   manifest_version: 3,
   name: 'Testkube for GitHub',
   description:
-    'Surfaces Testkube TestWorkflow Results on GitHub repos and Pull Requests. Requires a Testkube Control Plane (Cloud or on-prem).',
+    'Surfaces Testkube TestWorkflow Results on the GitHub repositories and Pull Requests containing the tests they run.',
   version: pkg.version,
   homepage_url: 'https://github.com/kubeshop/testkube-chrome-extension',
   icons: {

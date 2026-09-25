@@ -5,7 +5,7 @@ import {timeAgo} from '../lib/time';
 import {SYNC_ICON, buildKubieIcon, buildRefreshButton, ensureStyles, externalLink, octicon, statusKind} from './widget';
 
 // A native-looking sidebar item on pull request pages showing the GitHub
-// App's latest run for the PR: overall status, child executions, quality
+// App's latest run for the PR: overall status, test executions, quality
 // gates, and links into Testkube.
 
 export const PR_HOST_ID = 'testkube-gh-pr-host';
@@ -146,13 +146,13 @@ function buildRun(run: PullRequestRun, pageHeadSha: string | undefined, showEnv:
   head.appendChild(when);
   wrap.appendChild(head);
 
-  // Child executions, one row each.
-  if (run.children.length > 0) {
+  // Test executions, one row each.
+  if (run.tests.length > 0) {
     const list = document.createElement('ul');
-    list.className = 'tk-gh-pr-children';
-    for (const c of run.children) {
+    list.className = 'tk-gh-pr-tests';
+    for (const c of run.tests) {
       const li = document.createElement('li');
-      li.className = 'tk-gh-pr-child';
+      li.className = 'tk-gh-pr-test';
       const link = externalLink(c.url, c.workflowName);
       link.title = c.workflowName;
       const status = document.createElement('span');
