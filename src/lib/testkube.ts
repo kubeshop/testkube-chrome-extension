@@ -95,7 +95,10 @@ export async function listOrganizations(s: Settings): Promise<Organization[]> {
     // Every Control Plane serves /organizations; a 404 almost always means
     // the API URL points at something else, typically an Open Source agent.
     if (err instanceof TestkubeError && err.status === 404) {
-      throw new TestkubeError(NOT_A_CONTROL_PLANE, 404, err.detail);
+      // Keep whatever the server said (e.g. a proxy's explanation) so on-prem
+      // URL problems stay diagnosable.
+      const serverSaid = err.detail ? ` Server response: ${truncate(err.detail, 200)}` : '';
+      throw new TestkubeError(`${NOT_A_CONTROL_PLANE}${serverSaid}`, 404, err.detail);
     }
     throw err;
   }
