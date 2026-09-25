@@ -33,7 +33,7 @@ export async function hasHostPermission(apiBaseUrl: string): Promise<boolean> {
   const pattern = hostPatternFor(apiBaseUrl);
   if (!pattern) return false;
   try {
-    return await chrome.permissions.contains({ origins: [pattern] });
+    return await chrome.permissions.contains({origins: [pattern]});
   } catch {
     return false;
   }
@@ -45,7 +45,7 @@ export async function requestHostPermission(apiBaseUrl: string): Promise<boolean
   const pattern = hostPatternFor(apiBaseUrl);
   if (!pattern) return false;
   try {
-    return await chrome.permissions.request({ origins: [pattern] });
+    return await chrome.permissions.request({origins: [pattern]});
   } catch {
     return false;
   }

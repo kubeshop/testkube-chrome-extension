@@ -1,32 +1,24 @@
-import { useEffect, useState } from 'react';
-import { DEFAULT_SETTINGS, getSettings, isConfigured, saveSettings } from '../lib/storage';
-import { listEnvironments, listOrganizations, probeGithubApp } from '../lib/testkube';
-import {
-  hasHostPermission,
-  hostPatternFor,
-  isDefaultApiHost,
-  requestHostPermission,
-} from '../lib/permissions';
-import type { Settings } from '../lib/types';
+import {useEffect, useState} from 'react';
 
-type TestState =
-  | { kind: 'idle' }
-  | { kind: 'testing' }
-  | { kind: 'ok'; message: string }
-  | { kind: 'error'; message: string };
+import {hasHostPermission, hostPatternFor, isDefaultApiHost, requestHostPermission} from '../lib/permissions';
+import {DEFAULT_SETTINGS, getSettings, isConfigured, saveSettings} from '../lib/storage';
+import {listEnvironments, listOrganizations, probeGithubApp} from '../lib/testkube';
+import type {Settings} from '../lib/types';
+
+type TestState = {kind: 'idle'} | {kind: 'testing'} | {kind: 'ok'; message: string} | {kind: 'error'; message: string};
 
 export function App() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [test, setTest] = useState<TestState>({ kind: 'idle' });
+  const [test, setTest] = useState<TestState>({kind: 'idle'});
   // Whether the browser lets us call the configured API host. The cloud host
   // is allowed by the manifest; any other host needs a runtime grant.
   const [hostGranted, setHostGranted] = useState(true);
   const [hostDeclined, setHostDeclined] = useState(false);
 
   useEffect(() => {
-    void getSettings().then((s) => {
+    void getSettings().then(s => {
       setSettings(s);
       setLoaded(true);
     });
@@ -34,7 +26,7 @@ export function App() {
 
   useEffect(() => {
     let cancelled = false;
-    void hasHostPermission(settings.apiBaseUrl).then((ok) => {
+    void hasHostPermission(settings.apiBaseUrl).then(ok => {
       if (!cancelled) setHostGranted(ok);
     });
     return () => {
@@ -55,9 +47,9 @@ export function App() {
   };
 
   const update = (patch: Partial<Settings>) => {
-    setSettings((s) => ({ ...s, ...patch }));
+    setSettings(s => ({...s, ...patch}));
     setSaved(false);
-    setTest({ kind: 'idle' });
+    setTest({kind: 'idle'});
   };
 
   const onSave = async () => {
@@ -68,14 +60,14 @@ export function App() {
 
   const onTest = async () => {
     if (!(await ensureHostAccess())) {
-      setTest({ kind: 'error', message: hostAccessMessage(settings.apiBaseUrl) });
+      setTest({kind: 'error', message: hostAccessMessage(settings.apiBaseUrl)});
       return;
     }
-    setTest({ kind: 'testing' });
+    setTest({kind: 'testing'});
     try {
       const orgs = await listOrganizations(settings);
       if (orgs.length === 0) {
-        setTest({ kind: 'error', message: 'No organizations are accessible with this token.' });
+        setTest({kind: 'error', message: 'No organizations are accessible with this token.'});
         return;
       }
       const org = orgs[0];
@@ -84,10 +76,10 @@ export function App() {
       if (settings.githubAppIntegration && envs.length > 0) {
         // Probe each environment so the user learns up front whether pull
         // request results will be available.
-        const probes = await Promise.all(envs.map((e) => probeGithubApp(settings, org.id, e.id)));
-        const available = probes.filter((p) => p.capability === 'available').length;
-        const forbidden = probes.filter((p) => p.capability === 'forbidden').length;
-        if (probes.some((p) => p.capability === 'disabled')) {
+        const probes = await Promise.all(envs.map(e => probeGithubApp(settings, org.id, e.id)));
+        const available = probes.filter(p => p.capability === 'available').length;
+        const forbidden = probes.filter(p => p.capability === 'forbidden').length;
+        if (probes.some(p => p.capability === 'disabled')) {
           github = ' GitHub App: not enabled on this control plane.';
         } else if (available === 0 && forbidden > 0) {
           github = ' GitHub App: unavailable — the token cannot access the integration endpoints.';
@@ -106,7 +98,7 @@ export function App() {
         message: `Connected to "${org.name}" — ${envs.length} environment(s) accessible.${github}`,
       });
     } catch (err) {
-      setTest({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
+      setTest({kind: 'error', message: err instanceof Error ? err.message : String(err)});
     }
   };
 
@@ -122,8 +114,7 @@ export function App() {
     <div className="card">
       <h1>Testkube for GitHub</h1>
       <p className="subtitle">
-        Connect to your Testkube Control Plane to surface TestWorkflows on the GitHub repositories
-        they test.
+        Connect to your Testkube Control Plane to surface TestWorkflows on the GitHub repositories they test.
       </p>
 
       <label className="field">
@@ -132,7 +123,7 @@ export function App() {
           type="url"
           value={settings.apiBaseUrl}
           placeholder="https://api.testkube.io"
-          onChange={(e) => update({ apiBaseUrl: e.target.value })}
+          onChange={e => update({apiBaseUrl: e.target.value})}
         />
         {showHostNotice && (
           <span className="host-notice">
@@ -140,8 +131,8 @@ export function App() {
               <>
                 <span>
                   {hostDeclined ? 'Access was declined. ' : ''}
-                  The extension needs permission to call{' '}
-                  <code>{hostPattern.replace(/\/\*$/, '')}</code>. Chrome will ask once.
+                  The extension needs permission to call <code>{hostPattern.replace(/\/\*$/, '')}</code>. Chrome will
+                  ask once.
                 </span>
                 <button type="button" className="btn small" onClick={() => void ensureHostAccess()}>
                   Grant access
@@ -160,7 +151,7 @@ export function App() {
           type="url"
           value={settings.dashboardBaseUrl}
           placeholder="https://app.testkube.io"
-          onChange={(e) => update({ dashboardBaseUrl: e.target.value })}
+          onChange={e => update({dashboardBaseUrl: e.target.value})}
         />
       </label>
 
@@ -172,7 +163,7 @@ export function App() {
           step={5}
           value={settings.refreshIntervalSeconds}
           placeholder="0"
-          onChange={(e) => update({ refreshIntervalSeconds: Number(e.target.value) })}
+          onChange={e => update({refreshIntervalSeconds: Number(e.target.value)})}
         />
       </label>
 
@@ -183,13 +174,12 @@ export function App() {
           value={settings.repoFilters.join('\n')}
           placeholder={'kubeshop/*\n*/testkube*'}
           spellCheck={false}
-          onChange={(e) => update({ repoFilters: e.target.value.split('\n') })}
+          onChange={e => update({repoFilters: e.target.value.split('\n')})}
         />
         <span className="field-hint">
-          The panel appears automatically on repos that have Testkube workflows. Add patterns here to
-          also show it (with a prompt to create a workflow) on repos that don't have one yet. Matched
-          case-insensitively against <code>owner/repo</code>; <code>*</code> = any characters,{' '}
-          <code>?</code> = a single character.
+          The panel appears automatically on repos that have Testkube workflows. Add patterns here to also show it (with
+          a prompt to create a workflow) on repos that don't have one yet. Matched case-insensitively against{' '}
+          <code>owner/repo</code>; <code>*</code> = any characters, <code>?</code> = a single character.
         </span>
       </label>
 
@@ -197,13 +187,13 @@ export function App() {
         <input
           type="checkbox"
           checked={settings.githubAppIntegration}
-          onChange={(e) => update({ githubAppIntegration: e.target.checked })}
+          onChange={e => update({githubAppIntegration: e.target.checked})}
         />
         <span className="field-label">GitHub App integration (pull request results)</span>
         <span className="field-hint">
-          Shows the repository's GitHub App connection and recent pull request runs in the repo
-          sidebar, and a Testkube panel on pull request pages. Works with any token that can read
-          the environment. Turn off to skip these requests.
+          Shows the repository's GitHub App connection and recent pull request runs in the repo sidebar, and a Testkube
+          panel on pull request pages. Works with any token that can read the environment. Turn off to skip these
+          requests.
         </span>
       </label>
 
@@ -214,7 +204,7 @@ export function App() {
           value={settings.apiToken}
           placeholder="Personal or service API key"
           autoComplete="off"
-          onChange={(e) => update({ apiToken: e.target.value })}
+          onChange={e => update({apiToken: e.target.value})}
         />
       </label>
 
@@ -237,8 +227,8 @@ export function App() {
       {test.kind === 'error' && <div className="result error">{test.message}</div>}
 
       <p className="footnote">
-        The API token is stored locally in this browser and is never synced. This is a
-        proof-of-concept; treat the token as you would any credential.
+        The API token is stored locally in this browser and is never synced. This is a proof-of-concept; treat the token
+        as you would any credential.
       </p>
     </div>
   );

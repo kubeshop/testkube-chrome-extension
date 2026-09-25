@@ -1,20 +1,10 @@
-import { parseGithubRepoFromPath, repoMatchesPatterns, type RepoRef } from '../lib/match';
-import { log, warn } from '../lib/log';
-import { getSettings } from '../lib/storage';
-import type {
-  GetMatchesRequest,
-  GetPullRequestRequest,
-  MatchesResponse,
-  PullRequestResponse,
-} from '../lib/messaging';
-import { HOST_ID, removeWidget, renderLoading, renderWidget, setOnRefresh } from './widget';
-import {
-  PR_HOST_ID,
-  removePrWidget,
-  renderPrLoading,
-  renderPrWidget,
-  setOnPrRefresh,
-} from './pr-widget';
+import {log, warn} from '../lib/log';
+import {type RepoRef, parseGithubRepoFromPath, repoMatchesPatterns} from '../lib/match';
+import type {GetMatchesRequest, GetPullRequestRequest, MatchesResponse, PullRequestResponse} from '../lib/messaging';
+import {getSettings} from '../lib/storage';
+
+import {PR_HOST_ID, removePrWidget, renderPrLoading, renderPrWidget, setOnPrRefresh} from './pr-widget';
+import {HOST_ID, removeWidget, renderLoading, renderWidget, setOnRefresh} from './widget';
 
 log('content script loaded on', location.href);
 
@@ -69,7 +59,10 @@ function readPageHeadSha(ref: RepoRef, number: number): string | undefined {
   const links = document.querySelectorAll<HTMLAnchorElement>(`a[href^="${prefix}"]`);
   let sha: string | undefined;
   for (const a of links) {
-    const m = a.getAttribute('href')?.slice(prefix.length).match(/^([0-9a-f]{40})/i);
+    const m = a
+      .getAttribute('href')
+      ?.slice(prefix.length)
+      .match(/^([0-9a-f]{40})/i);
     if (m) sha = m[1];
   }
   return sha;
@@ -107,7 +100,7 @@ async function updateRepo(ref: RepoRef, force: boolean): Promise<void> {
   }
   log('detected repo', key, force ? '- forcing refresh' : '- requesting matches from service worker');
 
-  const req: GetMatchesRequest = { type: 'GET_MATCHES', owner: ref.owner, repo: ref.repo, force };
+  const req: GetMatchesRequest = {type: 'GET_MATCHES', owner: ref.owner, repo: ref.repo, force};
   const epoch = settingsEpoch;
   let res: MatchesResponse | undefined;
   try {
@@ -253,7 +246,7 @@ document.addEventListener('turbo:load', scheduleUpdate);
 document.addEventListener('pjax:end', scheduleUpdate);
 
 const observer = new MutationObserver(scheduleUpdate);
-observer.observe(document.documentElement, { childList: true, subtree: true });
+observer.observe(document.documentElement, {childList: true, subtree: true});
 
 // Manual refresh from the panel icons: re-query, bypassing caches.
 setOnRefresh(() => {
@@ -273,8 +266,7 @@ function applyRefreshInterval(seconds: number): void {
     refreshTimer = setInterval(() => {
       // Only refresh while a panel is actually showing (skip inactive pages).
       const showing =
-        (currentKey && document.getElementById(HOST_ID)) ||
-        (currentPrKey && document.getElementById(PR_HOST_ID));
+        (currentKey && document.getElementById(HOST_ID)) || (currentPrKey && document.getElementById(PR_HOST_ID));
       if (showing) void update(true);
     }, seconds * 1000);
     log('auto-refresh every', seconds, 'seconds');
@@ -283,7 +275,7 @@ function applyRefreshInterval(seconds: number): void {
 
 // Load settings before the first render so the loading-state dashboard link and
 // the auto-refresh interval are available.
-void getSettings().then((s) => {
+void getSettings().then(s => {
   dashboardBaseUrl = s.dashboardBaseUrl;
   repoFilters = s.repoFilters;
   githubAppEnabled = s.githubAppIntegration;
@@ -318,9 +310,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     githubAppEnabled = changes.githubAppIntegration.newValue !== false;
   }
   if (changes.repoFilters) {
-    repoFilters = Array.isArray(changes.repoFilters.newValue)
-      ? (changes.repoFilters.newValue as string[])
-      : [];
+    repoFilters = Array.isArray(changes.repoFilters.newValue) ? (changes.repoFilters.newValue as string[]) : [];
   }
   // Apply every changed value above before refreshing, so a single save that
   // touches several settings is evaluated with all of them. A different

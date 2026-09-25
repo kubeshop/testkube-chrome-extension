@@ -1,4 +1,4 @@
-import type { Settings } from './types';
+import type {Settings} from './types';
 
 export const DEFAULT_SETTINGS: Settings = {
   apiBaseUrl: 'https://api.testkube.io',
@@ -38,10 +38,10 @@ export async function saveSettings(s: Settings): Promise<void> {
       apiBaseUrl: s.apiBaseUrl.trim(),
       dashboardBaseUrl: s.dashboardBaseUrl.trim(),
       refreshIntervalSeconds: Math.max(0, Math.floor(s.refreshIntervalSeconds) || 0),
-      repoFilters: s.repoFilters.map((f) => f.trim()).filter(Boolean),
+      repoFilters: s.repoFilters.map(f => f.trim()).filter(Boolean),
       githubAppIntegration: Boolean(s.githubAppIntegration),
     }),
-    chrome.storage.local.set({ [TOKEN_KEY]: s.apiToken.trim() }),
+    chrome.storage.local.set({[TOKEN_KEY]: s.apiToken.trim()}),
   ]);
 }
 

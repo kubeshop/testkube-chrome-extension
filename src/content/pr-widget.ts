@@ -1,15 +1,8 @@
-import { log } from '../lib/log';
-import type { PullRequestResponse, PullRequestRun } from '../lib/messaging';
-import { timeAgo } from '../lib/time';
-import {
-  buildKubieIcon,
-  buildRefreshButton,
-  ensureStyles,
-  externalLink,
-  octicon,
-  statusKind,
-  SYNC_ICON,
-} from './widget';
+import {log} from '../lib/log';
+import type {PullRequestResponse, PullRequestRun} from '../lib/messaging';
+import {timeAgo} from '../lib/time';
+
+import {SYNC_ICON, buildKubieIcon, buildRefreshButton, ensureStyles, externalLink, octicon, statusKind} from './widget';
 
 // A native-looking sidebar item on pull request pages showing the GitHub
 // App's latest run for the PR: overall status, child executions, quality
@@ -86,8 +79,8 @@ function linksRow(links: HTMLElement[]): HTMLElement {
 function buildNotConnected(res: PullRequestResponse): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'tk-gh-empty';
-  const capable = res.capabilities.some((c) => c.capability === 'available');
-  const forbidden = res.capabilities.some((c) => c.capability === 'forbidden');
+  const capable = res.capabilities.some(c => c.capability === 'available');
+  const forbidden = res.capabilities.some(c => c.capability === 'forbidden');
 
   const lead = document.createElement('p');
   lead.className = 'tk-gh-empty-text';
@@ -95,8 +88,7 @@ function buildNotConnected(res: PullRequestResponse): HTMLElement {
     lead.textContent = 'This repository is not connected to Testkube through the GitHub App yet.';
     wrap.append(lead, linksRow([externalLink(res.connectUrl, 'Connect Testkube Bot →')]));
   } else if (!capable && forbidden) {
-    lead.textContent =
-      'Your Testkube API token cannot access the GitHub App integration in any environment.';
+    lead.textContent = 'Your Testkube API token cannot access the GitHub App integration in any environment.';
     wrap.appendChild(lead);
   } else {
     lead.textContent = 'This repository is not connected to Testkube through the GitHub App yet.';
@@ -181,9 +173,7 @@ function buildRun(run: PullRequestRun, pageHeadSha: string | undefined, showEnv:
   if (run.qualityGates.length > 0) {
     const gates = document.createElement('div');
     gates.className = 'tk-gh-pr-gates';
-    gates.textContent =
-      'Gates: ' +
-      run.qualityGates.map((g) => `${g.type}${g.required ? ' (required)' : ''}`).join(', ');
+    gates.textContent = 'Gates: ' + run.qualityGates.map(g => `${g.type}${g.required ? ' (required)' : ''}`).join(', ');
     wrap.appendChild(gates);
   }
 

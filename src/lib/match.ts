@@ -25,10 +25,10 @@ function wildcardToRegExp(pattern: string): RegExp {
 // compared case-insensitively against the full "owner/repo" string. An empty
 // list matches nothing (activity then comes purely from Testkube auto-detection).
 export function repoMatchesPatterns(ref: RepoRef, patterns: string[]): boolean {
-  const cleaned = patterns.map((p) => p.trim()).filter(Boolean);
+  const cleaned = patterns.map(p => p.trim()).filter(Boolean);
   if (cleaned.length === 0) return false;
   const target = `${ref.owner}/${ref.repo}`;
-  return cleaned.some((p) => wildcardToRegExp(p).test(target));
+  return cleaned.some(p => wildcardToRegExp(p).test(target));
 }
 
 // GitHub top-level path segments that are not repository owners.
@@ -66,13 +66,13 @@ export function parseGithubRepoFromPath(pathname: string): RepoRef | null {
   if (parts.length < 2) return null;
   const owner = parts[0];
   if (RESERVED_OWNERS.has(owner.toLowerCase())) return null;
-  return { host: 'github.com', owner, repo: stripGitSuffix(parts[1]) };
+  return {host: 'github.com', owner, repo: stripGitSuffix(parts[1])};
 }
 
 function refFromHostPath(host: string, path: string): RepoRef | null {
   const parts = path.split('/').filter(Boolean);
   if (parts.length < 2) return null;
-  return { host: host.toLowerCase(), owner: parts[0], repo: stripGitSuffix(parts[1]) };
+  return {host: host.toLowerCase(), owner: parts[0], repo: stripGitSuffix(parts[1])};
 }
 
 // Normalize a git remote URI to host/owner/repo, handling scp-like, ssh://,
@@ -126,15 +126,14 @@ export function extractGitContents(workflow: unknown): GitContent[] {
     if (git && typeof git === 'object' && typeof git.uri === 'string') {
       const uri = git.uri.trim();
       if (uri) {
-        const revision =
-          typeof git.revision === 'string' && git.revision.trim() ? git.revision.trim() : undefined;
+        const revision = typeof git.revision === 'string' && git.revision.trim() ? git.revision.trim() : undefined;
         const paths = Array.isArray(git.paths)
           ? git.paths
               .filter((p): p is string => typeof p === 'string')
-              .map((p) => p.trim())
+              .map(p => p.trim())
               .filter(Boolean)
           : [];
-        contents.push({ uri, revision, paths });
+        contents.push({uri, revision, paths});
       }
     }
     for (const value of Object.values(obj)) visit(value);
@@ -148,7 +147,7 @@ export function extractGitContents(workflow: unknown): GitContent[] {
 export function extractGitUris(workflow: unknown): string[] {
   const seen = new Set<string>();
   const uris: string[] = [];
-  for (const { uri } of extractGitContents(workflow)) {
+  for (const {uri} of extractGitContents(workflow)) {
     if (!seen.has(uri)) {
       seen.add(uri);
       uris.push(uri);
@@ -176,10 +175,10 @@ export function nearestNonGlobDir(path: string): string {
 
 export function workflowMatchesRepo(
   workflow: unknown,
-  repo: RepoRef,
-): { matches: boolean; gitUris: string[]; paths: MatchedGitPath[] } {
+  repo: RepoRef
+): {matches: boolean; gitUris: string[]; paths: MatchedGitPath[]} {
   const target = canonicalRepoKey(repo);
-  const matching = extractGitContents(workflow).filter((content) => {
+  const matching = extractGitContents(workflow).filter(content => {
     const ref = normalizeGitUri(content.uri);
     return ref ? canonicalRepoKey(ref) === target : false;
   });
@@ -198,10 +197,10 @@ export function workflowMatchesRepo(
       const key = `${content.revision ?? ''}\u0000${path}`;
       if (!seenPaths.has(key)) {
         seenPaths.add(key);
-        paths.push({ path, revision: content.revision });
+        paths.push({path, revision: content.revision});
       }
     }
   }
 
-  return { matches: matching.length > 0, gitUris, paths };
+  return {matches: matching.length > 0, gitUris, paths};
 }

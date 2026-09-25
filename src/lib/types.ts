@@ -129,13 +129,7 @@ export type GithubEventKind =
   | 'repository_onboarding'
   | (string & {});
 
-export type GithubEventStatus =
-  | 'received'
-  | 'processing'
-  | 'completed'
-  | 'failed'
-  | 'skipped'
-  | (string & {});
+export type GithubEventStatus = 'received' | 'processing' | 'completed' | 'failed' | 'skipped' | (string & {});
 
 export interface GithubEventChildExecution {
   id: string;
