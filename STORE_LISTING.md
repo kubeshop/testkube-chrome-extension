@@ -6,8 +6,7 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 ## Product details
 
 - **Name:** Testkube for GitHub
-- **Summary** (from the manifest, max 132 chars): Surfaces Testkube TestWorkflow Results on the
-  GitHub repositories and Pull Requests they test.
+- **Summary** (from the manifest, max 132 chars): Surfaces Testkube TestWorkflow Results on GitHub repos and Pull Requests. Requires a Testkube Control Plane (Cloud or on-prem).
 - **Category:** Developer Tools
 - **Language:** English
 - **Homepage / support:** <https://github.com/kubeshop/testkube-chrome-extension>
@@ -17,6 +16,11 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 ## Detailed description
 
 Testkube for GitHub brings your Testkube test results to the place you review code.
+
+Requirements: a Testkube Control Plane, either Testkube Cloud or an on-prem deployment, and an API
+token for it. The extension does not work with Testkube Open Source (the standalone agent), which
+does not provide the Control Plane APIs it uses. See https://testkube.io/pricing to get a Control
+Plane.
 
 On any GitHub repository that a Testkube TestWorkflow tests, a **Test Results** section appears in
 the repository sidebar: how many workflows ran, their latest status (passed, failed, aborted,
@@ -34,7 +38,7 @@ results only.
 
 Setup takes a minute: paste a Testkube API token in the options page. The extension discovers your
 organization and environments automatically. It works with Testkube Cloud out of the box and with
-self-managed control planes by entering your own API and dashboard URLs.
+on-prem Control Planes by entering your own API and dashboard URLs.
 
 Features
 
@@ -44,7 +48,7 @@ Features
 - Pull request panel with the latest GitHub App run, child executions, and quality gates
 - Recent pull request runs on the repository page
 - Manual refresh and optional auto-refresh
-- Works with Testkube Cloud and self-managed control planes
+- Works with the Testkube Control Plane, Cloud or on-prem
 
 Privacy
 
@@ -62,7 +66,7 @@ Show Testkube test results on GitHub repository and pull request pages.
 | `storage` | Stores the user's Testkube API token and settings, and caches control-plane responses for a few minutes. |
 | Host `https://api.testkube.io/*` | Calls the Testkube Cloud API to read organizations, environments, test workflows, executions, and GitHub App integration state for the repository or pull request being viewed. |
 | Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit from the page) to select which results to show, and injects the Test Results section into the sidebar. Only the repository name is sent to the configured Testkube host. |
-| Optional hosts `https://*/*`, `http://*/*` | Users running a self-managed Testkube control plane enter their own API URL. Access to that single origin is requested at runtime, only when the user saves such a URL, and is used solely for the same Testkube API calls. No host is accessed without an explicit grant. |
+| Optional hosts `https://*/*`, `http://*/*` | Users running an on-prem Testkube Control Plane enter their own API URL. Access to that single origin is requested at runtime, only when the user saves such a URL, and is used solely for the same Testkube API calls. No host is accessed without an explicit grant. |
 
 ## Data usage disclosure
 

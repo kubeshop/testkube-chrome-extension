@@ -88,9 +88,22 @@ async function apiGet<T>(s: Settings, path: string): Promise<T> {
 // List the organizations the token can see. A token is tied to a single org, so
 // this normally returns exactly one element.
 export async function listOrganizations(s: Settings): Promise<Organization[]> {
-  const data = await apiGet<ListResponse<Organization>>(s, '/organizations');
-  return data.elements ?? [];
+  try {
+    const data = await apiGet<ListResponse<Organization>>(s, '/organizations');
+    return data.elements ?? [];
+  } catch (err) {
+    // Every Control Plane serves /organizations; a 404 almost always means
+    // the API URL points at something else, typically an Open Source agent.
+    if (err instanceof TestkubeError && err.status === 404) {
+      throw new TestkubeError(NOT_A_CONTROL_PLANE, 404, err.detail);
+    }
+    throw err;
+  }
 }
+
+export const NOT_A_CONTROL_PLANE =
+  "This URL doesn't look like a Testkube Control Plane API. The extension requires a Testkube " +
+  "Control Plane (Cloud or on-prem) and doesn't work with Testkube Open Source.";
 
 // List the environments the token may access within an organization.
 export async function listEnvironments(s: Settings, orgId: string): Promise<Environment[]> {
