@@ -1,9 +1,13 @@
 # Testkube for GitHub (Chrome extension)
 
-A Chrome extension that surfaces your **Testkube** test results directly on GitHub repository pages.
-When you open a repo that is referenced by one or more Testkube TestWorkflows, the extension adds a
-**"Test Results"** section to the repo sidebar showing how many workflows ran, their latest status,
-and deep links into the Testkube dashboard.
+A Chrome extension that shows your **Testkube** TestWorkflow results where you work on code, in two
+places:
+
+- **Repository pages:** a **"Test Results"** section in the repo sidebar for workflows that run tests
+  stored in the repository, with their latest status and links to each execution.
+- **Pull requests:** for repositories connected through the Testkube GitHub App, the workflows each
+  pull request triggered, whichever repository their tests come from, with status, quality gates and
+  the AI analysis.
 
 > **Requirements:** a Testkube Control Plane, either Testkube Cloud or an on-prem deployment, and an
 > API token for it. The extension uses the Control Plane's organization, environment and GitHub App

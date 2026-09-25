@@ -6,7 +6,7 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 ## Product details
 
 - **Name:** Testkube for GitHub
-- **Summary** (from the manifest's `description`, max 132 chars): Surfaces Testkube TestWorkflow Results on the GitHub repositories and Pull Requests containing the tests they run.
+- **Summary** (from the manifest's `description`, max 132 chars): Surfaces Testkube TestWorkflow results on GitHub for workflows that run a repository's tests or are triggered by its Pull Requests.
   The store shows this line as-is, so the Control Plane requirement is stated in the detailed
   description below instead.
 - **Category:** Developer Tools
@@ -17,16 +17,24 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 
 ## Detailed description
 
-On any GitHub repository that contains tests executed by a Testkube TestWorkflow, a Test Results
-section appears in the repository sidebar: how many workflows ran, their latest status (passed,
-failed, aborted, cancelled, running), and deep links into the Testkube dashboard. Hover a status to
-see the workflows behind it and jump straight to their most recent execution.
+Testkube for GitHub shows your Testkube TestWorkflow results where you work on code, in two places:
+
+- Repository pages: a Test Results section for workflows that run tests stored in the repository,
+  with their latest status and links to each execution.
+- Pull requests: for repositories connected through the Testkube GitHub App, the workflows each pull
+  request triggered, whichever repository their tests come from, with status, quality gates and the
+  AI analysis.
 
 Requires a Testkube Control Plane (Cloud or on-prem) and an API token for it. See
 https://testkube.io/get-started to get a Control Plane.
 
-If the repository is connected through the Testkube GitHub App, the sidebar also shows the
-connection status and recent pull request runs, and the pull request conversation tab gets a
+On repository pages, the Test Results section in the sidebar shows how many workflows ran, their
+latest status (passed, failed, aborted, cancelled, running), and deep links into the Testkube
+dashboard. Hover a status to see the workflows behind it and jump straight to their most recent
+execution.
+
+For repositories connected through the Testkube GitHub App, the sidebar also shows the connection
+status and recent pull request runs, and the pull request conversation tab gets a
 Testkube panel with the latest run for that PR: overall status, the commit it ran for (flagged when
 the PR has moved on), one row per workflow execution, quality gates, and a link to the AI analysis
 when one was performed. Repositories that are not connected yet get a one-click link to connect
