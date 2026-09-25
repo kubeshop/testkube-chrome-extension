@@ -87,9 +87,24 @@ it has already seen. The listing texts, permission justifications, and asset che
 Other scripts:
 
 ```bash
-npm run typecheck   # type-check only
-npm run preview     # preview the built output
+npm run typecheck      # type-check only
+npm run lint           # ESLint
+npm run format         # Prettier (writes)
+npm run format:check   # Prettier (check only, as in CI)
+npm run preview        # preview the built output
 ```
+
+### Linting and formatting
+
+ESLint and Prettier use the same rules as Testkube's frontend projects. The shared rules are kept
+as verbatim copies in `config/` (`eslint.shared.js`, `prettier.shared.cjs`); extension-specific
+adjustments live in the root `eslint.config.js`. When the shared rules change upstream, copy the
+two files over again and keep them unmodified. CI runs `npm run lint` and `npm run format:check`.
+
+`.npmrc` sets `legacy-peer-deps` because a few ESLint plugins still declare peer support only up to
+ESLint 9. The one-time reformat commit is listed in `.git-blame-ignore-revs`; run
+`git config blame.ignoreRevsFile .git-blame-ignore-revs` once to have `git blame` skip it locally
+(GitHub does this automatically).
 
 ## How it works
 
