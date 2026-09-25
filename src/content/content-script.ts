@@ -292,7 +292,21 @@ void getSettings().then((s) => {
 });
 
 // React to settings changes saved from the options page (stored in sync).
+// Drop every panel and any in-flight response, then re-query (bypassing
+// caches) so the page reflects the new settings immediately.
+function requery(): void {
+  settingsEpoch += 1;
+  resetRepo();
+  resetPr();
+  void update(true);
+}
+
 chrome.storage.onChanged.addListener((changes, area) => {
+  // The API token lives in local storage; a new token means new data.
+  if (area === 'local') {
+    if (changes.apiToken) requery();
+    return;
+  }
   if (area !== 'sync') return;
   if (changes.refreshIntervalSeconds) {
     applyRefreshInterval(Number(changes.refreshIntervalSeconds.newValue) || 0);
@@ -302,12 +316,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
   if (changes.githubAppIntegration) {
     githubAppEnabled = changes.githubAppIntegration.newValue !== false;
-    // Drop every panel and any in-flight response, then re-query (bypassing
-    // caches) so the GitHub App data disappears or appears immediately.
-    settingsEpoch += 1;
-    resetRepo();
-    resetPr();
-    void update(true);
+  }
+  // A different control plane, dashboard, or GitHub App setting changes what
+  // (and where) the panels link to: fetch and render fresh data.
+  if (changes.apiBaseUrl || changes.dashboardBaseUrl || changes.githubAppIntegration) {
+    requery();
   }
   if (changes.repoFilters) {
     repoFilters = Array.isArray(changes.repoFilters.newValue)
