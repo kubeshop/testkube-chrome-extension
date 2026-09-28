@@ -1,9 +1,8 @@
 // Links for installing the Testkube Bot (the Testkube GitHub App).
 
-// Slug of the Testkube Bot GitHub App (github.com/apps/<slug>). While empty,
+// Slug of the Testkube Bot GitHub App (github.com/apps/<slug>). If emptied,
 // the install link falls back to the Marketplace listing.
-// TODO: set once the production app's slug is confirmed.
-export const TESTKUBE_BOT_APP_SLUG = '';
+export const TESTKUBE_BOT_APP_SLUG = 'testkube-bot';
 
 export const TESTKUBE_BOT_MARKETPLACE_URL = 'https://github.com/marketplace/testkube-bot';
 
