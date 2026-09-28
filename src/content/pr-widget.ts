@@ -51,7 +51,6 @@ export function renderPrWidget(res: PullRequestResponse, pageHeadSha?: string): 
 
   if (!res.configured) {
     content.appendChild(notice('Open the extension options to set your Testkube API token.'));
-    content.appendChild(linksRow([buildInstallBotLink()]));
   } else if (!res.ok) {
     content.appendChild(notice(res.error ?? 'Failed to query Testkube.'));
   } else if (!res.connected) {

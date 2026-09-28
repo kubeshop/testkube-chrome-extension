@@ -186,8 +186,10 @@ async function updatePullRequest(ref: RepoRef, number: number, force: boolean): 
   if (!now || `${keyFor(now)}#${pullRequestNumber(location.pathname)}` !== key) return;
 
   // Stay out of the way unless the repo is connected through the GitHub App,
-  // or the user allowlisted it (then show the setup, connect or role notice).
-  const show = res.configured ? res.ok && res.enabled && (res.connected || manual) : manual;
+  // or the user allowlisted it (then show the connect or role notice). Without
+  // an API token there is nothing to show on pull request pages; the repo
+  // sidebar carries the setup notice instead.
+  const show = res.configured && res.ok && res.enabled && (res.connected || manual);
   if (show || (manual && !res.ok)) {
     lastPrResponse = res;
     renderPrWidget(res, readPageHeadSha(ref, number));
