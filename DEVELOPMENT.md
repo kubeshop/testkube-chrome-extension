@@ -121,12 +121,14 @@ GitHub repo page ──(owner/repo)──▶ content script
                                 api.testkube.io
                                        │
                                        ▼
-              injected "Test Results" sidebar section + per-status popovers
+              injected "Testkube Results" sidebar section + per-status popovers
                           + environment dropdown with deep links
 ```
 
+- The section title is **Testkube Results**, or just **Testkube** while no API token is configured
+  (the pull request panel only appears once a token is set).
 - The **content script** runs on `github.com`, parses `owner/repo` from the URL, and asks the
-  background worker for matches. It injects a native-looking "Test Results" section into the repo
+  background worker for matches. It injects a native-looking "Testkube Results" section into the repo
   sidebar (above Releases), with the title linking to the dashboard like GitHub's own section
   headers, and re-injects across GitHub's Turbo (soft) navigation. It also shows a loading state on
   first query and drives the optional auto-refresh interval.

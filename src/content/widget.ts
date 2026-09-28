@@ -61,10 +61,15 @@ export function buildRefreshButton(handler: (() => void) | null = onRefresh): HT
   return btn;
 }
 
-// Inject a placeholder "Tests Executed" section with a spinner while the first
-// query for a repo is in flight. An optional dashboard URL is shown so the link
-// is available before results arrive.
-export function renderLoading(dashboardUrl?: string): void {
+// Section title: just "Testkube" until an API token is configured.
+export function headerTitle(configured: boolean): string {
+  return configured ? 'Testkube Results' : 'Testkube';
+}
+
+// Inject a placeholder section with a spinner while the first query for a repo
+// is in flight. An optional dashboard URL is shown so the link is available
+// before results arrive.
+export function renderLoading(configured: boolean, dashboardUrl?: string): void {
   ensureStyles();
   removeWidget();
   const content = document.createElement('div');
@@ -76,7 +81,7 @@ export function renderLoading(dashboardUrl?: string): void {
     `<span>Loading test workflows…</span>`;
   content.appendChild(row);
 
-  if (injectIntoSidebar(content, 0, false, dashboardUrl)) {
+  if (injectIntoSidebar(headerTitle(configured), content, 0, false, dashboardUrl)) {
     log('renderLoading: injected loading state');
   }
 }
@@ -173,8 +178,8 @@ export function renderWidget(res: MatchesResponse): void {
   const headerTooltip = envName
     ? `Test Workflows in the ${envName} Testkube Environment that run tests in this repository`
     : undefined;
-  if (injectIntoSidebar(content, total, showRefresh, headerUrl, headerTooltip)) {
-    log('renderWidget: injected "Tests Executed" section into sidebar');
+  if (injectIntoSidebar(headerTitle(res.configured), content, total, showRefresh, headerUrl, headerTooltip)) {
+    log('renderWidget: injected Testkube section into sidebar');
   } else {
     log('renderWidget: sidebar section not found, skipping injection');
   }
@@ -192,7 +197,7 @@ function visibleMatches(res: MatchesResponse): MatchedWorkflow[] {
   return res.matches.filter(m => m.environmentId === selectedEnvId);
 }
 
-// A grey count rendered after the "Tests Executed" label, mirroring how GitHub
+// A grey count rendered after the section title, mirroring how GitHub
 // shows the number of releases next to the "Releases" heading.
 function appendHeadingCount(heading: HTMLElement, total: number): void {
   if (total <= 0) return;
@@ -710,12 +715,11 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
   return li;
 }
 
-// Find a sidebar section by heading text and insert a native-looking
-// "Tests Executed" section above it, cloning the row/cell/heading classes so it
-// visually matches GitHub regardless of the (possibly hashed) class names.
-const HEADER_TITLE = 'Test Results';
-
+// Find a sidebar section by heading text and insert a native-looking Testkube
+// section above it, cloning the row/cell/heading classes so it visually matches
+// GitHub regardless of the (possibly hashed) class names.
 function injectIntoSidebar(
+  title: string,
   content: HTMLElement,
   total: number,
   showRefresh: boolean,
@@ -753,12 +757,12 @@ function injectIntoSidebar(
     titleLink.href = headerUrl;
     titleLink.target = '_blank';
     titleLink.rel = 'noopener noreferrer';
-    titleLink.textContent = HEADER_TITLE;
+    titleLink.textContent = title;
     if (headerTooltip) titleLink.title = headerTooltip;
     newHeading.appendChild(titleLink);
   } else {
     const titleText = document.createElement('span');
-    titleText.textContent = HEADER_TITLE;
+    titleText.textContent = title;
     if (headerTooltip) titleText.title = headerTooltip;
     newHeading.appendChild(titleText);
   }

@@ -3,7 +3,7 @@
 A Chrome extension that shows your **Testkube** TestWorkflow results where you work on code, in two
 places:
 
-- **Repository pages:** a **"Test Results"** section in the repo sidebar for workflows that run tests
+- **Repository pages:** a **"Testkube Results"** section in the repo sidebar for workflows that run tests
   stored in the repository, with their latest status and links to each execution.
 - **Pull requests:** for repositories connected through the Testkube GitHub App, the workflows each
   pull request triggered, whichever repository their tests come from, with status, quality gates and
@@ -15,7 +15,7 @@ places:
 
 ## Features
 
-- **"Test Results" sidebar section** on the repo home / Code tab, styled to match GitHub's native
+- **"Testkube Results" sidebar section** on the repo home / Code tab, styled to match GitHub's native
   sections (e.g. Releases).
 - **Status summary** grouped into passed, failed, aborted, cancelled, and running, each with a hover
   popover listing the matching workflows.
@@ -74,7 +74,7 @@ automatically, so no IDs are required.
 
 The extension activates automatically on any GitHub repository that a TestWorkflow references (via
 its `content.git.uri`) in an environment your token can access — no configuration needed. The
-**Test Results** section appears in the right-hand sidebar:
+**Testkube Results** section appears in the right-hand sidebar:
 
 - Hover a status row to see the workflows in that bucket.
 - Click a workflow to jump to its latest execution in Testkube.

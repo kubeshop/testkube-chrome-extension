@@ -9,6 +9,7 @@ import {
   buildRefreshButton,
   ensureStyles,
   externalLink,
+  headerTitle,
   octicon,
   statusKind,
 } from './widget';
@@ -29,7 +30,7 @@ export function removePrWidget(): void {
   document.getElementById(PR_HOST_ID)?.remove();
 }
 
-export function renderPrLoading(): void {
+export function renderPrLoading(configured: boolean): void {
   ensureStyles();
   removePrWidget();
   const content = document.createElement('div');
@@ -37,7 +38,7 @@ export function renderPrLoading(): void {
   content.innerHTML =
     `<span class="tk-gh-loading-spinner"><svg class="tk-gh-octicon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="${SYNC_ICON}"></path></svg></span>` +
     `<span>Loading Testkube results…</span>`;
-  injectIntoPrSidebar(content, undefined, false);
+  injectIntoPrSidebar(headerTitle(configured), content, undefined, false);
 }
 
 // Render the PR panel. `pageHeadSha` is the PR's current head commit as read
@@ -64,7 +65,7 @@ export function renderPrWidget(res: PullRequestResponse, pageHeadSha?: string): 
     for (const run of res.runs) content.appendChild(buildRun(run, pageHeadSha, showEnv));
   }
 
-  if (injectIntoPrSidebar(content, headerUrl, res.configured && res.ok)) {
+  if (injectIntoPrSidebar(headerTitle(res.configured), content, headerUrl, res.configured && res.ok)) {
     log('renderPrWidget: injected PR panel');
   } else {
     log('renderPrWidget: PR sidebar not found, skipping injection');
@@ -198,7 +199,12 @@ function buildRun(run: PullRequestRun, pageHeadSha: string | undefined, showEnv:
 
 // Insert our item at the top of the PR conversation sidebar, mirroring the
 // classic `.discussion-sidebar-item` structure so it inherits GitHub's spacing.
-function injectIntoPrSidebar(content: HTMLElement, headerUrl: string | undefined, showRefresh: boolean): boolean {
+function injectIntoPrSidebar(
+  title: string,
+  content: HTMLElement,
+  headerUrl: string | undefined,
+  showRefresh: boolean
+): boolean {
   const sidebar =
     document.getElementById('partial-discussion-sidebar') ??
     document.querySelector<HTMLElement>('#pr-conversation-sidebar');
@@ -218,12 +224,12 @@ function injectIntoPrSidebar(content: HTMLElement, headerUrl: string | undefined
     link.href = headerUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = 'Testkube';
+    link.textContent = title;
     link.title = 'Open Testkube';
     heading.appendChild(link);
   } else {
     const text = document.createElement('span');
-    text.textContent = 'Testkube';
+    text.textContent = title;
     heading.appendChild(text);
   }
   if (showRefresh) heading.appendChild(buildRefreshButton(() => onRefresh?.()));
