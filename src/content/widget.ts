@@ -1,4 +1,6 @@
+import {TESTKUBE_BOT_MARKETPLACE_URL, readRepoIdsFromPage, testkubeBotInstallUrl} from '../lib/bot';
 import {log} from '../lib/log';
+import {parseGithubRepoFromPath} from '../lib/match';
 import type {
   MatchedWorkflow,
   MatchesResponse,
@@ -241,12 +243,19 @@ function buildContent(res: MatchesResponse): HTMLElement {
 
 const NOT_CONNECTED_TEXT = 'This repository is not connected to Testkube through the GitHub App yet.';
 
-// The Testkube Bot (the Testkube GitHub App) on the GitHub Marketplace.
-export const TESTKUBE_BOT_URL = 'https://github.com/marketplace/testkube-bot';
-
+// Install link for the Testkube Bot. On a repository page it goes straight to
+// the app's installation page with the owner and this repository preselected.
 export function buildInstallBotLink(): HTMLAnchorElement {
-  const link = externalLink(TESTKUBE_BOT_URL, 'Install Testkube Bot \u2192');
-  link.title = 'Install the Testkube Bot GitHub App from the GitHub Marketplace';
+  const ref = parseGithubRepoFromPath(location.pathname);
+  const ids = ref ? readRepoIdsFromPage(document, `${ref.owner}/${ref.repo}`) : undefined;
+  const url = testkubeBotInstallUrl(ids);
+  const link = externalLink(url, 'Install Testkube Bot \u2192');
+  link.title =
+    url === TESTKUBE_BOT_MARKETPLACE_URL
+      ? 'Install the Testkube Bot GitHub App from the GitHub Marketplace'
+      : ids
+        ? 'Install the Testkube Bot GitHub App on this repository'
+        : 'Install the Testkube Bot GitHub App';
   return link;
 }
 

@@ -215,7 +215,7 @@ Activity is **hybrid**:
   they have no results (these show the empty state). The default is `*/*`, so every repo is active
   unless the user narrows or clears the list.
 - **Bot links in the empty states**: when the repo is not connected, the panels offer **Install
-  Testkube Bot** (the GitHub Marketplace listing) when no GitHub App installation covers the repo,
+  Testkube Bot** when no GitHub App installation covers the repo,
   or **Connect Testkube Bot** (dashboard onboarding with the repo preselected) when one does. The
   worker reports this as `appInstallation`: `installed` when the repo resolves to a GitHub repository
   id through the installations, `not-installed` when it does not, and `unknown` when it could not be
@@ -223,6 +223,14 @@ Activity is **hybrid**:
   which case no bot link is shown. The not-configured notice offers the install link unless the
   GitHub App integration is switched off. Changing any setting, including the patterns, re-queries
   open tabs, so clearing a pattern hides a panel that is already shown.
+- **Install link**: [`src/lib/bot.ts`](src/lib/bot.ts) points **Install Testkube Bot** at
+  `https://github.com/apps/<slug>/installations/new?suggested_target_id=<owner id>&repository_ids[]=<repo id>`,
+  so GitHub opens the installation with the owner and repository preselected. The ids come from the
+  `octolytics-dimension-*` meta tags GitHub puts on repository pages, used only when their
+  `repository_nwo` matches the current repo. The install needs no signed `state`: the control
+  plane's callback treats a state-less install like a Marketplace one and continues in the
+  dashboard onboarding. While `TESTKUBE_BOT_APP_SLUG` is empty the link falls back to the
+  Marketplace listing.
 
 `update()` in [`src/content/content-script.ts`](src/content/content-script.ts) computes
 `manual = repoMatchesPatterns(ref, repoFilters)` (an empty list matches nothing). It shows the
