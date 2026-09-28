@@ -205,7 +205,10 @@ function appendHeadingCount(heading: HTMLElement, total: number): void {
 // Build the inner content (optional env dropdown + summary + hover popover, or a notice).
 function buildContent(res: MatchesResponse): HTMLElement {
   if (!res.configured) {
-    return buildNotice('Open the extension options to set your Testkube API token.');
+    const wrap = document.createElement('div');
+    wrap.appendChild(buildNotice('Open the extension options to set your Testkube API token.'));
+    wrap.appendChild(buildLinksRow([buildInstallBotLink()]));
+    return wrap;
   }
   if (!res.ok) {
     return buildNotice(res.error ?? 'Failed to query Testkube.');
@@ -232,6 +235,32 @@ function buildContent(res: MatchesResponse): HTMLElement {
 
 const NOT_CONNECTED_TEXT = 'This repository is not connected to Testkube through the GitHub App yet.';
 
+// The Testkube Bot (the Testkube GitHub App) on the GitHub Marketplace.
+export const TESTKUBE_BOT_URL = 'https://github.com/marketplace/testkube-bot';
+
+export function buildInstallBotLink(): HTMLAnchorElement {
+  const link = externalLink(TESTKUBE_BOT_URL, 'Install Testkube Bot \u2192');
+  link.title = 'Install the Testkube Bot GitHub App from the GitHub Marketplace';
+  return link;
+}
+
+function buildLinksRow(links: HTMLElement[]): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'tk-gh-empty-links';
+  for (const l of links) row.appendChild(l);
+  return row;
+}
+
+// The bot action for a repo that is not connected: Connect when the app is
+// already installed on it, Install when it is not. None when the GitHub App
+// integration is switched off or disabled on the Control Plane.
+function buildBotLink(res: MatchesResponse): HTMLAnchorElement | null {
+  const connect = buildConnectLink(res);
+  if (connect) return connect;
+  if (!res.github || res.github.featureDisabled || res.github.appInstalled) return null;
+  return buildInstallBotLink();
+}
+
 // Build the "Connect Testkube Bot" link for a repo that has no connection.
 function buildConnectLink(res: MatchesResponse): HTMLAnchorElement | null {
   if (!res.github?.connectUrl) return null;
@@ -243,9 +272,9 @@ function buildConnectLink(res: MatchesResponse): HTMLAnchorElement | null {
 }
 
 // Shown under the workflow summary when the repo has workflows but is not
-// connected through the GitHub App (and the token could connect it).
+// connected through the GitHub App (with a Connect or Install bot link).
 function buildNotConnectedSection(res: MatchesResponse): HTMLElement | null {
-  const connect = buildConnectLink(res);
+  const connect = buildBotLink(res);
   if (!connect) return null;
   const wrap = document.createElement('div');
   wrap.className = 'tk-gh-github';
@@ -407,7 +436,7 @@ function buildEmptyState(res: MatchesResponse): HTMLElement {
     return wrap;
   }
 
-  const connect = buildConnectLink(res);
+  const connect = buildBotLink(res);
   if (connect) {
     lead.textContent = NOT_CONNECTED_TEXT;
     wrap.appendChild(lead);

@@ -78,8 +78,12 @@ export interface RepoGithubInfo {
   // True when the control plane reports the feature as turned off.
   featureDisabled: boolean;
   connections: RepoGithubConnection[];
-  // Onboarding link when the repo is not connected to any capable environment
-  // yet (preselecting the repo when an installation already covers it).
+  // True when one of the organization's GitHub App installations covers this
+  // repository (so it can be connected); false when the app is not installed
+  // on it, or that could not be determined.
+  appInstalled: boolean;
+  // Onboarding link for a repo the app is installed on but that is not
+  // connected to any capable environment yet.
   connectUrl?: string;
   connectEnvironmentName?: string;
 }
@@ -150,6 +154,8 @@ export interface PullRequestResponse {
   featureDisabled: boolean;
   // True when the repo is connected in at least one capable environment.
   connected: boolean;
+  // True when a GitHub App installation covers the repo (see RepoGithubInfo).
+  appInstalled: boolean;
   runs: PullRequestRun[];
   connectUrl?: string;
   dashboardUrl?: string;

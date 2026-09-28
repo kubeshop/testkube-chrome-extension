@@ -209,8 +209,14 @@ Activity is **hybrid**:
   the same `GET_MATCHES` query the worker already runs (`matches.length > 0`) — the worker fetches
   all workflows for all environments once per TTL and caches them, so the per-repo check is
   cache-backed.
-- **Manual**: the optional **Active on repositories** patterns mark additional repos as active even
-  when they have no workflow yet (these show the create-a-workflow empty state).
+- **Manual**: the **Active on repositories** patterns mark additional repos as active even when
+  they have no results (these show the empty state). The default is `*/*`, so every repo is active
+  unless the user narrows or clears the list.
+- **Bot links in the empty states**: when the repo is not connected, the panels offer **Install
+  Testkube Bot** (the GitHub Marketplace listing) if no GitHub App installation covers the repo, or
+  **Connect Testkube Bot** (dashboard onboarding with the repo preselected) if one does. Whether an
+  installation covers the repo is `appInstalled`, true when the repo resolves to a GitHub repository
+  id through the installations. The not-configured notice always offers the install link.
 
 `update()` in [`src/content/content-script.ts`](src/content/content-script.ts) computes
 `manual = repoMatchesPatterns(ref, repoFilters)` (an empty list matches nothing). It shows the
@@ -249,7 +255,7 @@ Defaults and storage live in [`src/lib/storage.ts`](src/lib/storage.ts):
 | ---------------------- | ------------------------- | ---------------------- |
 | API base URL           | `https://api.testkube.io` | `chrome.storage.sync`  |
 | Dashboard base URL     | `https://app.testkube.io` | `chrome.storage.sync`  |
-| Active on repositories | `[]` (auto-detect only)   | `chrome.storage.sync`  |
+| Active on repositories | `['*/*']` (all repos)     | `chrome.storage.sync`  |
 | Auto-refresh interval  | `0` (off)                 | `chrome.storage.sync`  |
 | GitHub App integration | `true`                    | `chrome.storage.sync`  |
 | API token              | —                         | `chrome.storage.local` |

@@ -377,16 +377,11 @@ async function buildRepoGithubInfo(
     capabilities: scan.capabilities,
     featureDisabled: scan.featureDisabled,
     connections: [],
+    appInstalled: Boolean(repositoryId),
   };
-  // No installation covers this repo yet: offer the onboarding flow anyway
-  // (it walks through installing the app), without a preselected repository.
-  if (!repositoryId) {
-    if (scan.capable.length > 0) {
-      info.connectUrl = buildConnectUrl(s, orgId, scan.capable[0].id);
-      info.connectEnvironmentName = scan.capable[0].name;
-    }
-    return info;
-  }
+  // No installation covers this repo (or it could not be resolved): the panel
+  // offers installing the Testkube Bot instead of connecting.
+  if (!repositoryId) return info;
 
   const connections: RepoGithubConnection[] = [];
   await mapWithConcurrency(scan.capable, ENV_CONCURRENCY, async env => {
@@ -595,6 +590,7 @@ async function handleGetPullRequest(
     capabilities: [],
     featureDisabled: false,
     connected: false,
+    appInstalled: false,
     runs: [],
   };
   if (!base.configured || !base.enabled) return base;
@@ -613,12 +609,8 @@ async function handleGetPullRequest(
     base.capabilities = scan.capabilities;
     base.featureDisabled = scan.featureDisabled;
     base.dashboardUrl = dashboardBase(settings);
-    if (!repositoryId) {
-      if (scan.capable.length > 0) {
-        base.connectUrl = buildConnectUrl(settings, orgId, scan.capable[0].id);
-      }
-      return base;
-    }
+    base.appInstalled = Boolean(repositoryId);
+    if (!repositoryId) return base;
 
     const connectedEnvs = scan.capable.filter(env => env.integrations.some(i => i.repositoryId === repositoryId));
     base.connected = connectedEnvs.length > 0;
@@ -724,6 +716,7 @@ chrome.runtime.onMessage.addListener((request: RuntimeRequest, _sender, sendResp
           capabilities: [],
           featureDisabled: false,
           connected: false,
+          appInstalled: false,
           runs: [],
           error: String(err),
         });

@@ -185,8 +185,9 @@ export function App() {
           onChange={e => update({repoFilters: e.target.value.split('\n')})}
         />
         <span className="field-hint">
-          The panel appears automatically on repos that have Testkube workflows. Add patterns here to also show it (with
-          a prompt to create a workflow) on repos that don't have one yet. Matched case-insensitively against{' '}
+          The panel always appears on repos that have Testkube workflows or a GitHub App connection. These patterns also
+          show it, with setup and install prompts, on other repos. The default <code>*/*</code> shows it everywhere;
+          narrow it (e.g. <code>my-org/*</code>) or clear it to only show results. Matched case-insensitively against{' '}
           <code>owner/repo</code>; <code>*</code> = any characters, <code>?</code> = a single character.
         </span>
       </label>

@@ -5,7 +5,9 @@ export const DEFAULT_SETTINGS: Settings = {
   dashboardBaseUrl: 'https://app.testkube.io',
   apiToken: '',
   refreshIntervalSeconds: 0,
-  repoFilters: [],
+  // Show the panel on every repository out of the box (with setup and install
+  // prompts where there are no results); users can narrow this in the options.
+  repoFilters: ['*/*'],
   githubAppIntegration: true,
 };
 

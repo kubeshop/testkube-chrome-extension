@@ -2,7 +2,16 @@ import {log} from '../lib/log';
 import type {PullRequestResponse, PullRequestRun} from '../lib/messaging';
 import {timeAgo} from '../lib/time';
 
-import {SYNC_ICON, buildKubieIcon, buildRefreshButton, ensureStyles, externalLink, octicon, statusKind} from './widget';
+import {
+  SYNC_ICON,
+  buildInstallBotLink,
+  buildKubieIcon,
+  buildRefreshButton,
+  ensureStyles,
+  externalLink,
+  octicon,
+  statusKind,
+} from './widget';
 
 // A native-looking sidebar item on pull request pages showing the GitHub
 // App's latest run for the PR: overall status, test executions, quality
@@ -93,7 +102,10 @@ function buildNotConnected(res: PullRequestResponse): HTMLElement {
   } else {
     lead.textContent = 'This repository is not connected to Testkube through the GitHub App yet.';
     wrap.appendChild(lead);
-    if (res.dashboardUrl) wrap.appendChild(linksRow([externalLink(res.dashboardUrl, 'Open Testkube →')]));
+    const links: HTMLElement[] = [];
+    if (!res.appInstalled && !res.featureDisabled) links.push(buildInstallBotLink());
+    if (res.dashboardUrl) links.push(externalLink(res.dashboardUrl, 'Open Testkube →'));
+    if (links.length > 0) wrap.appendChild(linksRow(links));
   }
   return wrap;
 }
