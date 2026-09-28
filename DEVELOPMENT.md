@@ -213,10 +213,14 @@ Activity is **hybrid**:
   they have no results (these show the empty state). The default is `*/*`, so every repo is active
   unless the user narrows or clears the list.
 - **Bot links in the empty states**: when the repo is not connected, the panels offer **Install
-  Testkube Bot** (the GitHub Marketplace listing) if no GitHub App installation covers the repo, or
-  **Connect Testkube Bot** (dashboard onboarding with the repo preselected) if one does. Whether an
-  installation covers the repo is `appInstalled`, true when the repo resolves to a GitHub repository
-  id through the installations. The not-configured notice always offers the install link.
+  Testkube Bot** (the GitHub Marketplace listing) when no GitHub App installation covers the repo,
+  or **Connect Testkube Bot** (dashboard onboarding with the repo preselected) when one does. The
+  worker reports this as `appInstallation`: `installed` when the repo resolves to a GitHub repository
+  id through the installations, `not-installed` when it does not, and `unknown` when it could not be
+  checked (no environment where the token can use the GitHub App endpoints, or a failed lookup), in
+  which case no bot link is shown. The not-configured notice offers the install link unless the
+  GitHub App integration is switched off. Changing any setting, including the patterns, re-queries
+  open tabs, so clearing a pattern hides a panel that is already shown.
 
 `update()` in [`src/content/content-script.ts`](src/content/content-script.ts) computes
 `manual = repoMatchesPatterns(ref, repoFilters)` (an empty list matches nothing). It shows the

@@ -207,7 +207,8 @@ function buildContent(res: MatchesResponse): HTMLElement {
   if (!res.configured) {
     const wrap = document.createElement('div');
     wrap.appendChild(buildNotice('Open the extension options to set your Testkube API token.'));
-    wrap.appendChild(buildLinksRow([buildInstallBotLink()]));
+    // Skip the bot prompt for users who switched the GitHub App integration off.
+    if (res.githubAppEnabled !== false) wrap.appendChild(buildLinksRow([buildInstallBotLink()]));
     return wrap;
   }
   if (!res.ok) {
@@ -252,12 +253,13 @@ function buildLinksRow(links: HTMLElement[]): HTMLElement {
 }
 
 // The bot action for a repo that is not connected: Connect when the app is
-// already installed on it, Install when it is not. None when the GitHub App
-// integration is switched off or disabled on the Control Plane.
+// already installed on it, Install when it is known not to be. None when that
+// could not be checked, or the GitHub App integration is switched off or
+// disabled on the Control Plane.
 function buildBotLink(res: MatchesResponse): HTMLAnchorElement | null {
   const connect = buildConnectLink(res);
   if (connect) return connect;
-  if (!res.github || res.github.featureDisabled || res.github.appInstalled) return null;
+  if (!res.github || res.github.featureDisabled || res.github.appInstallation !== 'not-installed') return null;
   return buildInstallBotLink();
 }
 

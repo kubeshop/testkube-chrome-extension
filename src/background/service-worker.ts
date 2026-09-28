@@ -1,6 +1,7 @@
 import {log, error as logError, warn} from '../lib/log';
 import {type MatchedGitPath, type RepoRef, extractGitUris, nearestNonGlobDir, workflowMatchesRepo} from '../lib/match';
 import type {
+  AppInstallation,
   EnvironmentCapability,
   MatchedEnvironment,
   MatchedWorkflow,
@@ -277,23 +278,26 @@ async function resolveRepositoryId(
   fullName: string,
   cache: GithubCache,
   force: boolean
-): Promise<string | undefined> {
-  if (capable.length === 0) return undefined;
+): Promise<{repositoryId?: string; installation: AppInstallation}> {
+  if (capable.length === 0) return {installation: 'unknown'};
   const key = fullName.toLowerCase();
   const hit = cache.repos[key];
   if (!force && hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) {
-    return hit.repositoryId || undefined;
+    return hit.repositoryId
+      ? {repositoryId: hit.repositoryId, installation: 'installed'}
+      : {installation: 'not-installed'};
   }
   let repositoryId = '';
   try {
     const repo = await findGithubRepository(s, orgId, capable[0].id, fullName);
     if (repo) repositoryId = String(repo.id);
   } catch (err) {
+    // Not cached: a failed lookup says nothing about the installation.
     warn(`GitHub repository lookup failed for ${fullName}:`, err);
-    return undefined;
+    return {installation: 'unknown'};
   }
   cache.repos[key] = {fetchedAt: Date.now(), repositoryId};
-  return repositoryId || undefined;
+  return repositoryId ? {repositoryId, installation: 'installed'} : {installation: 'not-installed'};
 }
 
 // Overall test status of a PR run, from its test executions once they have
@@ -370,17 +374,17 @@ async function buildRepoGithubInfo(
   const cache = await loadGithubCache(cacheSignature(s));
   const scan = await scanGithubApp(s, orgId, environments, cache, force);
   const fullName = `${repo.owner}/${repo.repo}`;
-  const repositoryId = await resolveRepositoryId(s, orgId, scan.capable, fullName, cache, force);
+  const {repositoryId, installation} = await resolveRepositoryId(s, orgId, scan.capable, fullName, cache, force);
   await chrome.storage.local.set({[GITHUB_CACHE_KEY]: cache});
 
   const info: RepoGithubInfo = {
     capabilities: scan.capabilities,
     featureDisabled: scan.featureDisabled,
     connections: [],
-    appInstalled: Boolean(repositoryId),
+    appInstallation: installation,
   };
-  // No installation covers this repo (or it could not be resolved): the panel
-  // offers installing the Testkube Bot instead of connecting.
+  // Not covered by an installation (or unknown): nothing to connect; the panel
+  // offers installing the Testkube Bot only when it is known not to be installed.
   if (!repositoryId) return info;
 
   const connections: RepoGithubConnection[] = [];
@@ -420,7 +424,13 @@ async function handleGetMatches(owner: string, repo: string, force: boolean): Pr
   const settings = await getSettings();
   if (!isConfigured(settings)) {
     log('not configured (missing apiBaseUrl/apiToken)');
-    return {ok: true, configured: false, matches: [], environments: []};
+    return {
+      ok: true,
+      configured: false,
+      matches: [],
+      environments: [],
+      githubAppEnabled: settings.githubAppIntegration,
+    };
   }
 
   const hostError = await hostAccessError(settings);
@@ -590,7 +600,7 @@ async function handleGetPullRequest(
     capabilities: [],
     featureDisabled: false,
     connected: false,
-    appInstalled: false,
+    appInstallation: 'unknown',
     runs: [],
   };
   if (!base.configured || !base.enabled) return base;
@@ -603,13 +613,20 @@ async function handleGetPullRequest(
     const {orgId, environments} = await discover(settings, force);
     const cache = await loadGithubCache(cacheSignature(settings));
     const scan = await scanGithubApp(settings, orgId, environments, cache, force);
-    const repositoryId = await resolveRepositoryId(settings, orgId, scan.capable, fullName, cache, force);
+    const {repositoryId, installation} = await resolveRepositoryId(
+      settings,
+      orgId,
+      scan.capable,
+      fullName,
+      cache,
+      force
+    );
     await chrome.storage.local.set({[GITHUB_CACHE_KEY]: cache});
 
     base.capabilities = scan.capabilities;
     base.featureDisabled = scan.featureDisabled;
     base.dashboardUrl = dashboardBase(settings);
-    base.appInstalled = Boolean(repositoryId);
+    base.appInstallation = installation;
     if (!repositoryId) return base;
 
     const connectedEnvs = scan.capable.filter(env => env.integrations.some(i => i.repositoryId === repositoryId));
@@ -716,7 +733,7 @@ chrome.runtime.onMessage.addListener((request: RuntimeRequest, _sender, sendResp
           capabilities: [],
           featureDisabled: false,
           connected: false,
-          appInstalled: false,
+          appInstallation: 'unknown',
           runs: [],
           error: String(err),
         });

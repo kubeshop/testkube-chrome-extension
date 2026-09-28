@@ -51,6 +51,7 @@ export function renderPrWidget(res: PullRequestResponse, pageHeadSha?: string): 
 
   if (!res.configured) {
     content.appendChild(notice('Open the extension options to set your Testkube API token.'));
+    content.appendChild(linksRow([buildInstallBotLink()]));
   } else if (!res.ok) {
     content.appendChild(notice(res.error ?? 'Failed to query Testkube.'));
   } else if (!res.connected) {
@@ -103,7 +104,7 @@ function buildNotConnected(res: PullRequestResponse): HTMLElement {
     lead.textContent = 'This repository is not connected to Testkube through the GitHub App yet.';
     wrap.appendChild(lead);
     const links: HTMLElement[] = [];
-    if (!res.appInstalled && !res.featureDisabled) links.push(buildInstallBotLink());
+    if (res.appInstallation === 'not-installed' && !res.featureDisabled) links.push(buildInstallBotLink());
     if (res.dashboardUrl) links.push(externalLink(res.dashboardUrl, 'Open Testkube →'));
     if (links.length > 0) wrap.appendChild(linksRow(links));
   }

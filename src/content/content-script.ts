@@ -186,8 +186,8 @@ async function updatePullRequest(ref: RepoRef, number: number, force: boolean): 
   if (!now || `${keyFor(now)}#${pullRequestNumber(location.pathname)}` !== key) return;
 
   // Stay out of the way unless the repo is connected through the GitHub App,
-  // or the user allowlisted it (then show the connect / role notice).
-  const show = res.configured && res.ok && res.enabled && (res.connected || manual);
+  // or the user allowlisted it (then show the setup, connect or role notice).
+  const show = res.configured ? res.ok && res.enabled && (res.connected || manual) : manual;
   if (show || (manual && !res.ok)) {
     lastPrResponse = res;
     renderPrWidget(res, readPageHeadSha(ref, number));
@@ -313,13 +313,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
     repoFilters = Array.isArray(changes.repoFilters.newValue) ? (changes.repoFilters.newValue as string[]) : [];
   }
   // Apply every changed value above before refreshing, so a single save that
-  // touches several settings is evaluated with all of them. A different
-  // control plane, dashboard, or GitHub App setting changes what (and where)
-  // the panels link to: fetch fresh data. A pattern change alone only needs
-  // the current page re-evaluated against the new allowlist.
-  if (changes.apiBaseUrl || changes.dashboardBaseUrl || changes.githubAppIntegration) {
+  // touches several settings is evaluated with all of them. Then fetch fresh
+  // data: a different control plane, dashboard or GitHub App setting changes
+  // what the panels show and link to, and a pattern change must be able to
+  // hide a panel that is already shown for the current page.
+  if (changes.apiBaseUrl || changes.dashboardBaseUrl || changes.githubAppIntegration || changes.repoFilters) {
     requery();
-  } else if (changes.repoFilters) {
-    void update();
   }
 });

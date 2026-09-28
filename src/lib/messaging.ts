@@ -73,15 +73,17 @@ export interface RepoGithubConnection {
   recentPullRequests: RecentPullRequest[];
 }
 
+export type AppInstallation = 'installed' | 'not-installed' | 'unknown';
+
 export interface RepoGithubInfo {
   capabilities: EnvironmentCapability[];
   // True when the control plane reports the feature as turned off.
   featureDisabled: boolean;
   connections: RepoGithubConnection[];
-  // True when one of the organization's GitHub App installations covers this
-  // repository (so it can be connected); false when the app is not installed
-  // on it, or that could not be determined.
-  appInstalled: boolean;
+  // Whether one of the organization's GitHub App installations covers this
+  // repository. 'unknown' when it could not be checked (no environment where
+  // the token can use the GitHub App endpoints, or the lookup failed).
+  appInstallation: AppInstallation;
   // Onboarding link for a repo the app is installed on but that is not
   // connected to any capable environment yet.
   connectUrl?: string;
@@ -116,6 +118,8 @@ export interface MatchesResponse {
   dashboardUrl?: string;
   // GitHub App connection state for the repo (absent when the setting is off).
   github?: RepoGithubInfo;
+  // Whether the GitHub App integration setting is on (set even when not configured).
+  githubAppEnabled?: boolean;
   error?: string;
 }
 
@@ -154,8 +158,8 @@ export interface PullRequestResponse {
   featureDisabled: boolean;
   // True when the repo is connected in at least one capable environment.
   connected: boolean;
-  // True when a GitHub App installation covers the repo (see RepoGithubInfo).
-  appInstalled: boolean;
+  // Whether a GitHub App installation covers the repo (see RepoGithubInfo).
+  appInstallation: AppInstallation;
   runs: PullRequestRun[];
   connectUrl?: string;
   dashboardUrl?: string;
