@@ -26,12 +26,18 @@ export function readRepoIdsFromPage(doc: Document, fullName: string): RepoIds | 
   return {ownerId, repositoryId};
 }
 
-// Where "Install Testkube Bot" points: straight to the app's installation page,
-// preselecting the repository's owner and the repository itself when their ids
-// are known, or the Marketplace listing while the app slug is not set.
+// Where "Install Testkube Bot" points. With the repository's ids known it opens
+// the account-specific installation screen (/installations/new/permissions),
+// which skips GitHub's account picker and preselects "Only select repositories"
+// with this repository. The account goes in both suggested_target_id (required
+// on that path) and target_id (what GitHub's own install buttons send).
+// Without ids it opens the account picker; without a slug, the Marketplace.
 export function testkubeBotInstallUrl(ids?: RepoIds, slug: string = TESTKUBE_BOT_APP_SLUG): string {
   if (!slug) return TESTKUBE_BOT_MARKETPLACE_URL;
   const base = `https://github.com/apps/${encodeURIComponent(slug)}/installations/new`;
   if (!ids) return base;
-  return `${base}?suggested_target_id=${ids.ownerId}&repository_ids[]=${ids.repositoryId}`;
+  return (
+    `${base}/permissions?suggested_target_id=${ids.ownerId}` +
+    `&target_id=${ids.ownerId}&repository_ids[]=${ids.repositoryId}`
+  );
 }

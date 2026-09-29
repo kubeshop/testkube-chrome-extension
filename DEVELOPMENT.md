@@ -224,8 +224,11 @@ Activity is **hybrid**:
   GitHub App integration is switched off. Changing any setting, including the patterns, re-queries
   open tabs, so clearing a pattern hides a panel that is already shown.
 - **Install link**: [`src/lib/bot.ts`](src/lib/bot.ts) points **Install Testkube Bot** at
-  `https://github.com/apps/<slug>/installations/new?suggested_target_id=<owner id>&repository_ids[]=<repo id>`,
-  so GitHub opens the installation with the owner and repository preselected. The ids come from the
+  `https://github.com/apps/<slug>/installations/new/permissions?suggested_target_id=<owner id>&target_id=<owner id>&repository_ids[]=<repo id>`.
+  The `/permissions` path is the account-specific screen: it skips GitHub's account picker and
+  preselects "Only select repositories" with this repository (plain `/installations/new` always
+  shows the picker, whatever the parameters). The account id is sent as both `suggested_target_id`
+  (required on that path) and `target_id` (what GitHub's own install buttons send). The ids come from the
   `octolytics-dimension-*` meta tags GitHub puts on repository pages, used only when their
   `repository_nwo` matches the current repo. The install needs no signed `state`: the control
   plane's callback treats a state-less install like a Marketplace one and continues in the
