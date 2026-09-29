@@ -228,7 +228,12 @@ Activity is **hybrid**:
   The `/permissions` path is the account-specific screen: it skips GitHub's account picker and
   preselects "Only select repositories" with this repository (plain `/installations/new` always
   shows the picker, whatever the parameters). The account id is sent as both `suggested_target_id`
-  (required on that path) and `target_id` (what GitHub's own install buttons send). The ids come from the
+  (required on that path) and `target_id` (what GitHub's own install buttons send). GitHub answers
+  404 on that path for users who cannot install apps on the account, so the link starts as the
+  account picker (`/installations/new?suggested_target_id=…&repository_ids[]=…`) and switches to
+  the direct URL only after a same-origin `HEAD` request with the user's GitHub session returns
+  200 (`canOpen`, cached per URL). A 404, a redirect to the login page, or an error keeps the
+  picker. The ids come from the
   `octolytics-dimension-*` meta tags GitHub puts on repository pages, used only when their
   `repository_nwo` matches the current repo. The install needs no signed `state`: the control
   plane's callback treats a state-less install like a Marketplace one and continues in the
