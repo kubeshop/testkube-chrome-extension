@@ -600,10 +600,19 @@ function buildPopover(titleText: string, items: MatchedWorkflow[]): HTMLElement 
 
   const list = document.createElement('ul');
   list.className = 'tk-gh-list';
-  for (const m of items) list.appendChild(buildListItem(m));
+  for (const m of byNewestRun(items)) list.appendChild(buildListItem(m));
   popover.appendChild(list);
 
   return popover;
+}
+
+// Most recently run first; workflows without a run go last, then by name.
+function byNewestRun(items: MatchedWorkflow[]): MatchedWorkflow[] {
+  const at = (m: MatchedWorkflow): number => {
+    const t = m.lastRunAt ? Date.parse(m.lastRunAt) : Number.NaN;
+    return Number.isNaN(t) ? Number.NEGATIVE_INFINITY : t;
+  };
+  return [...items].sort((a, b) => at(b) - at(a) || a.name.localeCompare(b.name));
 }
 
 // Wire a body-mounted popover to a trigger element, opening to the right of the
