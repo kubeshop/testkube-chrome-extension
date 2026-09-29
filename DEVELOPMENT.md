@@ -229,7 +229,7 @@ Activity is **hybrid**:
   `octolytics-dimension-*` meta tags GitHub puts on repository pages, used only when their
   `repository_nwo` matches the current repo. The install needs no signed `state`: the control
   plane's callback treats a state-less install like a Marketplace one and continues in the
-  dashboard onboarding. The app slug is `TESTKUBE_BOT_APP_SLUG` (`testkube-bot`); if it is
+  dashboard onboarding. The app slug is `TESTKUBE_BOT_APP_SLUG` (`testkubebot`); if it is
   emptied, the link falls back to the Marketplace listing.
 
 `update()` in [`src/content/content-script.ts`](src/content/content-script.ts) computes

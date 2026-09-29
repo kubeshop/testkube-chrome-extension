@@ -2,7 +2,7 @@
 
 // Slug of the Testkube Bot GitHub App (github.com/apps/<slug>). If emptied,
 // the install link falls back to the Marketplace listing.
-export const TESTKUBE_BOT_APP_SLUG = 'testkube-bot';
+export const TESTKUBE_BOT_APP_SLUG = 'testkubebot';
 
 export const TESTKUBE_BOT_MARKETPLACE_URL = 'https://github.com/marketplace/testkube-bot';
 
