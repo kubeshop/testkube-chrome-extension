@@ -497,18 +497,25 @@
   font-size: 11px;
 }
 
-/* ---- Last run time and run history ------------------------------------- */
+/* ---- Run times and run history ---------------------------------------- */
 
-.tk-gh-last-run {
-  font-size: 12px;
+/* Summary rows span the sidebar so their timestamps can sit on the right. */
+.tk-gh-summary {
+  align-items: stretch;
+}
+
+.tk-gh-stat-time {
+  margin-left: auto;
+  padding-left: 12px;
+  white-space: nowrap;
   color: var(--fgColor-muted, #656d76);
 }
 
 .tk-gh-history {
   display: inline-flex;
-  gap: 2px;
-  margin: 4px 0 0 20px;
-  padding: 2px 4px;
+  gap: 3px;
+  margin: 5px 0 0 20px;
+  padding: 2px;
   border-radius: 4px;
   text-decoration: none;
 }
@@ -520,20 +527,29 @@
 
 .tk-gh-history-bar {
   display: inline-block;
-  width: 6px;
-  height: 12px;
-  border-radius: 1px;
-}
-
-.tk-gh-history-bar--pass {
-  background: var(--fgColor-success, #1a7f37);
-}
-
-.tk-gh-history-bar--fail {
-  background: var(--fgColor-danger, #cf222e);
-}
-
-.tk-gh-history-bar--other {
+  width: 14px;
+  height: 9px;
+  border-radius: 2px;
   background: var(--fgColor-muted, #8c959f);
   opacity: 0.5;
+}
+
+.tk-gh-history-bar--passed {
+  background: var(--fgColor-success, #1a7f37);
+  opacity: 1;
+}
+
+.tk-gh-history-bar--failed {
+  background: var(--fgColor-danger, #cf222e);
+  opacity: 1;
+}
+
+.tk-gh-history-bar--aborted {
+  background: var(--fgColor-severe, #bc4c00);
+  opacity: 1;
+}
+
+.tk-gh-history-bar--running {
+  background: var(--fgColor-attention, #9a6700);
+  opacity: 1;
 }

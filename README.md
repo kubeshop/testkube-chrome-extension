@@ -19,10 +19,11 @@ places:
   sections (e.g. Releases).
 - **Status summary** grouped into passed, failed, aborted, cancelled, and running, each with a hover
   popover listing the matching workflows.
-- **Last run time** under the summary, with the exact time on hover.
-- **Run history** under each workflow in the popovers: its last 10 executions as green (passed),
-  red (failed, timed out or aborted) or grey (running, queued, cancelled) bars, oldest to newest;
-  click it to open the workflow's executions in Testkube.
+- **Run times**: each status row shows when its most recent run happened (e.g. "Sep 26 2026,
+  1:10 PM"), and each workflow in the popovers shows how long ago it last ran.
+- **Run history** under each workflow in the popovers: its last 10 executions, oldest to newest, in
+  the status colors (green passed, red failed, orange aborted); click it to open the workflow's
+  executions in Testkube.
 - **Deep links into Testkube:**
   - The section title links to the environment's TestWorkflows dashboard.
   - Each status label links to the matching prefiltered executions view (passed / failed / aborted /

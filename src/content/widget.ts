@@ -8,7 +8,7 @@ import type {
   RecentPullRequest,
   RepoGithubConnection,
 } from '../lib/messaging';
-import {timeAgo} from '../lib/time';
+import {formatDateTime, relativeTime, timeAgo} from '../lib/time';
 
 import widgetCss from './widget.css?inline';
 
@@ -539,7 +539,7 @@ function buildSummary(matches: MatchedWorkflow[], executionsUrl?: string): HTMLE
     const items = groups.get(kind) ?? [];
     if (items.length === 0 && !always) continue;
 
-    const stat = buildStat(kind, items.length, label, executionsUrl);
+    const stat = buildStat(kind, items.length, label, executionsUrl, latestRunAt(items));
     if (items.length > 0) {
       stat.tabIndex = 0;
       stat.classList.add('tk-gh-stat--interactive');
@@ -549,36 +549,21 @@ function buildSummary(matches: MatchedWorkflow[], executionsUrl?: string): HTMLE
     summary.appendChild(stat);
   }
 
-  const lastRun = buildLastRun(matches);
-  if (lastRun) summary.appendChild(lastRun);
-
   return summary;
 }
 
-// "Last run 2h ago": the most recent execution across the listed workflows,
-// with the exact time on hover.
-function buildLastRun(matches: MatchedWorkflow[]): HTMLElement | null {
-  let latest = Number.NaN;
+// The most recent run among the given workflows.
+function latestRunAt(matches: MatchedWorkflow[]): string | undefined {
+  let latest: string | undefined;
+  let latestMs = Number.NEGATIVE_INFINITY;
   for (const m of matches) {
     const t = m.lastRunAt ? Date.parse(m.lastRunAt) : Number.NaN;
-    if (!Number.isNaN(t) && (Number.isNaN(latest) || t > latest)) latest = t;
+    if (!Number.isNaN(t) && t > latestMs) {
+      latestMs = t;
+      latest = m.lastRunAt;
+    }
   }
-  if (Number.isNaN(latest)) return null;
-  const iso = new Date(latest).toISOString();
-  const el = document.createElement('span');
-  el.className = 'tk-gh-last-run';
-  el.textContent = `Last run ${timeAgo(iso)}`;
-  el.title = new Date(latest).toLocaleString();
-  return el;
-}
-
-// Pass/fail colouring for the run history: passed is green, a failed, timed
-// out or aborted run is red, anything else (running, queued, cancelled) grey.
-function historyKind(status?: string): 'pass' | 'fail' | 'other' {
-  const kind = statusKind(status);
-  if (kind === 'passed') return 'pass';
-  if (kind === 'failed' || kind === 'aborted') return 'fail';
-  return 'other';
+  return latest;
 }
 
 // A strip of the last executions, oldest to newest left to right, linking to
@@ -595,8 +580,9 @@ function buildHistory(m: MatchedWorkflow): HTMLElement | null {
   strip.setAttribute('aria-label', `${m.name}: last ${n} executions`);
   for (const entry of [...m.history].reverse()) {
     const bar = document.createElement('span');
-    bar.className = `tk-gh-history-bar tk-gh-history-bar--${historyKind(entry.status)}`;
-    bar.title = [entry.status ?? 'unknown', entry.at ? timeAgo(entry.at) : ''].filter(Boolean).join(' \u00b7 ');
+    // Same colours as the status icons: green passed, red failed, orange aborted.
+    bar.className = `tk-gh-history-bar tk-gh-history-bar--${statusKind(entry.status)}`;
+    bar.title = [entry.status ?? 'unknown', formatDateTime(entry.at)].filter(Boolean).join(' \u00b7 ');
     strip.appendChild(bar);
   }
   return strip;
@@ -702,7 +688,13 @@ function statusExecutionsUrl(executionsUrl: string | undefined, kind: StatusKind
   return viewId ? `${executionsUrl}/views/${viewId}` : executionsUrl;
 }
 
-function buildStat(kind: StatusKind, count: number, label: string, executionsUrl?: string): HTMLElement {
+function buildStat(
+  kind: StatusKind,
+  count: number,
+  label: string,
+  executionsUrl?: string,
+  lastRunAt?: string
+): HTMLElement {
   const stat = document.createElement('span');
   stat.className = 'tk-gh-stat';
 
@@ -727,6 +719,13 @@ function buildStat(kind: StatusKind, count: number, label: string, executionsUrl
   }
 
   stat.append(octicon(kind), value, text);
+  if (lastRunAt) {
+    const time = document.createElement('span');
+    time.className = 'tk-gh-stat-time';
+    time.textContent = formatDateTime(lastRunAt);
+    time.title = `Most recent ${label} run: ${relativeTime(lastRunAt)}`;
+    stat.appendChild(time);
+  }
   return stat;
 }
 
@@ -745,15 +744,14 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
   link.textContent = m.name;
   link.title = m.name;
 
+  // When it last ran (the icon already shows the status).
   const status = document.createElement('span');
   status.className = 'tk-gh-item-status';
-  status.textContent = m.status ?? 'no runs';
+  status.textContent = m.lastRunAt ? relativeTime(m.lastRunAt) : 'no runs';
+  if (m.lastRunAt) status.title = `${m.status ?? 'unknown'} \u00b7 ${formatDateTime(m.lastRunAt)}`;
 
   main.append(octicon(statusKind(m.status)), link, status);
   li.appendChild(main);
-
-  const history = buildHistory(m);
-  if (history) li.appendChild(history);
 
   if (m.paths?.length) {
     const paths = document.createElement('ul');
@@ -774,6 +772,9 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
     li.appendChild(paths);
   }
 
+  // Recent run history below the paths.
+  const history = buildHistory(m);
+  if (history) li.appendChild(history);
   return li;
 }
 
