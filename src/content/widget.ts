@@ -120,7 +120,8 @@ export function statusKind(status?: string): StatusKind {
 
 // Octicon SVGs (16px). check/x-circle-fill match GitHub's Deployments icons;
 // the others use a solid disc of the same visual weight, colored per status.
-const DISC = 'M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Z';
+// Full 16px disc, the same size as the check/x circles.
+const DISC = 'M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Z';
 const ICON_PATHS: Record<StatusKind, string> = {
   passed:
     'M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16Zm3.78-9.72-4.5 4.5a.75.75 0 0 1-1.06 0l-2-2a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l1.47 1.47 3.97-3.97a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z',
