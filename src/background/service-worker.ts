@@ -19,7 +19,7 @@ import {getSettings, isConfigured} from '../lib/storage';
 import {
   TestkubeError,
   findGithubRepository,
-  getLatestExecution,
+  getRecentExecutions,
   listEnvironments,
   listExecutionIntegrationEvents,
   listGithubIntegrationEvents,
@@ -495,6 +495,7 @@ async function handleGetMatches(owner: string, repo: string, force: boolean): Pr
           // Default to the workflow's Executions tab; replaced with a direct
           // link to the latest execution once we know its id (below).
           dashboardUrl: buildWorkflowExecutionsUrl(settings, orgId, env.id, name),
+          executionsUrl: buildWorkflowExecutionsUrl(settings, orgId, env.id, name),
           paths: linkedPaths.length ? linkedPaths : undefined,
         });
       }
@@ -510,15 +511,19 @@ async function handleGetMatches(owner: string, repo: string, force: boolean): Pr
       log('no matches; git URIs discovered across workflows:', [...allUris]);
     }
 
-    // Latest execution (status + id) for every matched workflow, with bounded
-    // concurrency. When an execution exists, link straight to its details page.
+    // Recent executions for every matched workflow, with bounded concurrency:
+    // the newest gives the status, time and a direct link to its details page,
+    // the rest the short run history shown in the popovers.
     await mapWithConcurrency(matched, STATUS_CONCURRENCY, async m => {
       try {
-        const latest = await getLatestExecution(settings, orgId, m.environmentId, m.name);
-        m.status = latest.status;
-        if (latest.id) {
+        const recent = await getRecentExecutions(settings, orgId, m.environmentId, m.name);
+        const latest = recent[0];
+        if (latest) {
+          m.status = latest.status;
+          m.lastRunAt = latest.at;
           m.dashboardUrl = buildExecutionDetailsUrl(settings, orgId, m.environmentId, latest.id);
         }
+        m.history = recent.map(r => ({status: r.status, at: r.at}));
       } catch (err) {
         log(`status lookup failed for "${m.name}":`, err);
       }

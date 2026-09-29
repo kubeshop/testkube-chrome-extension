@@ -549,7 +549,57 @@ function buildSummary(matches: MatchedWorkflow[], executionsUrl?: string): HTMLE
     summary.appendChild(stat);
   }
 
+  const lastRun = buildLastRun(matches);
+  if (lastRun) summary.appendChild(lastRun);
+
   return summary;
+}
+
+// "Last run 2h ago": the most recent execution across the listed workflows,
+// with the exact time on hover.
+function buildLastRun(matches: MatchedWorkflow[]): HTMLElement | null {
+  let latest = Number.NaN;
+  for (const m of matches) {
+    const t = m.lastRunAt ? Date.parse(m.lastRunAt) : Number.NaN;
+    if (!Number.isNaN(t) && (Number.isNaN(latest) || t > latest)) latest = t;
+  }
+  if (Number.isNaN(latest)) return null;
+  const iso = new Date(latest).toISOString();
+  const el = document.createElement('span');
+  el.className = 'tk-gh-last-run';
+  el.textContent = `Last run ${timeAgo(iso)}`;
+  el.title = new Date(latest).toLocaleString();
+  return el;
+}
+
+// Pass/fail colouring for the run history: passed is green, a failed, timed
+// out or aborted run is red, anything else (running, queued, cancelled) grey.
+function historyKind(status?: string): 'pass' | 'fail' | 'other' {
+  const kind = statusKind(status);
+  if (kind === 'passed') return 'pass';
+  if (kind === 'failed' || kind === 'aborted') return 'fail';
+  return 'other';
+}
+
+// A strip of the last executions, oldest to newest left to right, linking to
+// the workflow's executions list in the dashboard.
+function buildHistory(m: MatchedWorkflow): HTMLElement | null {
+  if (!m.history?.length) return null;
+  const strip = document.createElement('a');
+  strip.className = 'tk-gh-history';
+  strip.href = m.executionsUrl;
+  strip.target = '_blank';
+  strip.rel = 'noopener noreferrer';
+  const n = m.history.length;
+  strip.title = `Last ${n} execution${n === 1 ? '' : 's'}, oldest to newest. Click to open the executions list.`;
+  strip.setAttribute('aria-label', `${m.name}: last ${n} executions`);
+  for (const entry of [...m.history].reverse()) {
+    const bar = document.createElement('span');
+    bar.className = `tk-gh-history-bar tk-gh-history-bar--${historyKind(entry.status)}`;
+    bar.title = [entry.status ?? 'unknown', entry.at ? timeAgo(entry.at) : ''].filter(Boolean).join(' \u00b7 ');
+    strip.appendChild(bar);
+  }
+  return strip;
 }
 
 function buildPopover(titleText: string, items: MatchedWorkflow[]): HTMLElement {
@@ -701,6 +751,9 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
 
   main.append(octicon(statusKind(m.status)), link, status);
   li.appendChild(main);
+
+  const history = buildHistory(m);
+  if (history) li.appendChild(history);
 
   if (m.paths?.length) {
     const paths = document.createElement('ul');

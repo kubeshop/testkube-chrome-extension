@@ -120,20 +120,34 @@ export async function listWorkflows(s: Settings, orgId: string, environmentId: s
   return Array.isArray(data) ? data : [];
 }
 
-// Latest execution (status + id) for a workflow (best effort). The id lets us
-// deep-link straight to the most recent execution's details page.
-export async function getLatestExecution(
+export interface RecentExecution {
+  id: string;
+  status?: string;
+  // When it ran: finished, else started, else scheduled.
+  at?: string;
+}
+
+// The most recent executions of a workflow, newest first (best effort). One
+// request serves both the latest status and the short run history.
+export async function getRecentExecutions(
   s: Settings,
   orgId: string,
   environmentId: string,
-  workflowName: string
-): Promise<{status?: string; id?: string}> {
+  workflowName: string,
+  limit = 10
+): Promise<RecentExecution[]> {
   const data = await apiGet<TestWorkflowExecutionsResult>(
     s,
-    agentPath(orgId, environmentId, `/test-workflows/${encodeURIComponent(workflowName)}/executions`)
+    agentPath(orgId, environmentId, `/test-workflows/${encodeURIComponent(workflowName)}/executions?pageSize=${limit}`)
   );
-  const latest = data.results?.[0];
-  return {status: latest?.result?.status, id: latest?.id};
+  return (data.results ?? [])
+    .filter(r => r.id)
+    .slice(0, limit)
+    .map(r => ({
+      id: r.id as string,
+      status: r.result?.status,
+      at: r.result?.finishedAt ?? r.result?.startedAt ?? r.scheduledAt,
+    }));
 }
 
 // ---- GitHub App (Git Integration) --------------------------------------------

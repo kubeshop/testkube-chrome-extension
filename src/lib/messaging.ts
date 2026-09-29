@@ -24,6 +24,17 @@ export interface MatchedWorkflow {
   environmentName: string;
   // Git paths referenced by this workflow for the current repo, linked to GitHub.
   paths?: WorkflowGitPath[];
+  // When the latest execution ran.
+  lastRunAt?: string;
+  // Up to the last 10 executions, newest first.
+  history?: ExecutionHistoryEntry[];
+  // The workflow's executions list in the dashboard.
+  executionsUrl: string;
+}
+
+export interface ExecutionHistoryEntry {
+  status?: TestWorkflowStatus;
+  at?: string;
 }
 
 // An environment that has at least one workflow matching the current repo.
