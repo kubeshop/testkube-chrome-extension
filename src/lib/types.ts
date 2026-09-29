@@ -53,6 +53,9 @@ export type TestWorkflowStatus =
 
 export interface TestWorkflowResultSummary {
   status?: TestWorkflowStatus;
+  queuedAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
 }
 
 export interface TestWorkflowExecutionSummary {

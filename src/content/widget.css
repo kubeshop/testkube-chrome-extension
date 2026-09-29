@@ -496,3 +496,60 @@
   margin-top: 6px;
   font-size: 11px;
 }
+
+/* ---- Run times and run history ---------------------------------------- */
+
+/* Summary rows span the sidebar so their timestamps can sit on the right. */
+.tk-gh-summary {
+  align-items: stretch;
+}
+
+.tk-gh-stat-time {
+  margin-left: auto;
+  padding-left: 12px;
+  white-space: nowrap;
+  color: var(--fgColor-muted, #656d76);
+}
+
+.tk-gh-history {
+  display: inline-flex;
+  gap: 3px;
+  margin: 5px 0 0 20px;
+  padding: 2px;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.tk-gh-history:hover,
+.tk-gh-history:focus-visible {
+  background: var(--bgColor-neutral-muted, rgba(175, 184, 193, 0.2));
+}
+
+.tk-gh-history-bar {
+  display: inline-block;
+  width: 14px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--fgColor-muted, #8c959f);
+  opacity: 0.5;
+}
+
+.tk-gh-history-bar--passed {
+  background: var(--fgColor-success, #1a7f37);
+  opacity: 1;
+}
+
+.tk-gh-history-bar--failed {
+  background: var(--fgColor-danger, #cf222e);
+  opacity: 1;
+}
+
+.tk-gh-history-bar--aborted {
+  background: var(--fgColor-severe, #bc4c00);
+  opacity: 1;
+}
+
+.tk-gh-history-bar--running {
+  background: var(--fgColor-attention, #9a6700);
+  opacity: 1;
+}

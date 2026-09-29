@@ -1,4 +1,6 @@
+import {TESTKUBE_BOT_MARKETPLACE_URL, readRepoIdsFromPage, testkubeBotInstallUrl} from '../lib/bot';
 import {log} from '../lib/log';
+import {parseGithubRepoFromPath} from '../lib/match';
 import type {
   MatchedWorkflow,
   MatchesResponse,
@@ -6,7 +8,7 @@ import type {
   RecentPullRequest,
   RepoGithubConnection,
 } from '../lib/messaging';
-import {timeAgo} from '../lib/time';
+import {formatDateTime, relativeTime, timeAgo} from '../lib/time';
 
 import widgetCss from './widget.css?inline';
 
@@ -61,10 +63,15 @@ export function buildRefreshButton(handler: (() => void) | null = onRefresh): HT
   return btn;
 }
 
-// Inject a placeholder "Tests Executed" section with a spinner while the first
-// query for a repo is in flight. An optional dashboard URL is shown so the link
-// is available before results arrive.
-export function renderLoading(dashboardUrl?: string): void {
+// Section title: just "Testkube" until an API token is configured.
+export function headerTitle(configured: boolean): string {
+  return configured ? 'Testkube Results' : 'Testkube';
+}
+
+// Inject a placeholder section with a spinner while the first query for a repo
+// is in flight. An optional dashboard URL is shown so the link is available
+// before results arrive.
+export function renderLoading(configured: boolean, dashboardUrl?: string): void {
   ensureStyles();
   removeWidget();
   const content = document.createElement('div');
@@ -76,7 +83,7 @@ export function renderLoading(dashboardUrl?: string): void {
     `<span>Loading test workflows…</span>`;
   content.appendChild(row);
 
-  if (injectIntoSidebar(content, 0, false, dashboardUrl)) {
+  if (injectIntoSidebar(headerTitle(configured), content, 0, false, dashboardUrl)) {
     log('renderLoading: injected loading state');
   }
 }
@@ -113,7 +120,8 @@ export function statusKind(status?: string): StatusKind {
 
 // Octicon SVGs (16px). check/x-circle-fill match GitHub's Deployments icons;
 // the others use a solid disc of the same visual weight, colored per status.
-const DISC = 'M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Z';
+// Full 16px disc, the same size as the check/x circles.
+const DISC = 'M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Z';
 const ICON_PATHS: Record<StatusKind, string> = {
   passed:
     'M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16Zm3.78-9.72-4.5 4.5a.75.75 0 0 1-1.06 0l-2-2a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l1.47 1.47 3.97-3.97a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z',
@@ -173,8 +181,8 @@ export function renderWidget(res: MatchesResponse): void {
   const headerTooltip = envName
     ? `Test Workflows in the ${envName} Testkube Environment that run tests in this repository`
     : undefined;
-  if (injectIntoSidebar(content, total, showRefresh, headerUrl, headerTooltip)) {
-    log('renderWidget: injected "Tests Executed" section into sidebar');
+  if (injectIntoSidebar(headerTitle(res.configured), content, total, showRefresh, headerUrl, headerTooltip)) {
+    log('renderWidget: injected Testkube section into sidebar');
   } else {
     log('renderWidget: sidebar section not found, skipping injection');
   }
@@ -192,7 +200,7 @@ function visibleMatches(res: MatchesResponse): MatchedWorkflow[] {
   return res.matches.filter(m => m.environmentId === selectedEnvId);
 }
 
-// A grey count rendered after the "Tests Executed" label, mirroring how GitHub
+// A grey count rendered after the section title, mirroring how GitHub
 // shows the number of releases next to the "Releases" heading.
 function appendHeadingCount(heading: HTMLElement, total: number): void {
   if (total <= 0) return;
@@ -205,7 +213,11 @@ function appendHeadingCount(heading: HTMLElement, total: number): void {
 // Build the inner content (optional env dropdown + summary + hover popover, or a notice).
 function buildContent(res: MatchesResponse): HTMLElement {
   if (!res.configured) {
-    return buildNotice('Open the extension options to set your Testkube API token.');
+    const wrap = document.createElement('div');
+    wrap.appendChild(buildNotice('Open the extension options to set your Testkube API token.'));
+    // Skip the bot prompt for users who switched the GitHub App integration off.
+    if (res.githubAppEnabled !== false) wrap.appendChild(buildLinksRow([buildInstallBotLink()]));
+    return wrap;
   }
   if (!res.ok) {
     return buildNotice(res.error ?? 'Failed to query Testkube.');
@@ -232,6 +244,40 @@ function buildContent(res: MatchesResponse): HTMLElement {
 
 const NOT_CONNECTED_TEXT = 'This repository is not connected to Testkube through the GitHub App yet.';
 
+// Install link for the Testkube Bot. On a repository page it goes straight to
+// the app's installation page with the owner and this repository preselected.
+export function buildInstallBotLink(): HTMLAnchorElement {
+  const ref = parseGithubRepoFromPath(location.pathname);
+  const ids = ref ? readRepoIdsFromPage(document, `${ref.owner}/${ref.repo}`) : undefined;
+  const url = testkubeBotInstallUrl(ids);
+  const link = externalLink(url, 'Install Testkube Bot \u2192');
+  link.title =
+    url === TESTKUBE_BOT_MARKETPLACE_URL
+      ? 'Install the Testkube Bot GitHub App from the GitHub Marketplace'
+      : ids
+        ? 'Install the Testkube Bot GitHub App on this repository'
+        : 'Install the Testkube Bot GitHub App';
+  return link;
+}
+
+function buildLinksRow(links: HTMLElement[]): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'tk-gh-empty-links';
+  for (const l of links) row.appendChild(l);
+  return row;
+}
+
+// The bot action for a repo that is not connected: Connect when the app is
+// already installed on it, Install when it is known not to be. None when that
+// could not be checked, or the GitHub App integration is switched off or
+// disabled on the Control Plane.
+function buildBotLink(res: MatchesResponse): HTMLAnchorElement | null {
+  const connect = buildConnectLink(res);
+  if (connect) return connect;
+  if (!res.github || res.github.featureDisabled || res.github.appInstallation !== 'not-installed') return null;
+  return buildInstallBotLink();
+}
+
 // Build the "Connect Testkube Bot" link for a repo that has no connection.
 function buildConnectLink(res: MatchesResponse): HTMLAnchorElement | null {
   if (!res.github?.connectUrl) return null;
@@ -243,9 +289,9 @@ function buildConnectLink(res: MatchesResponse): HTMLAnchorElement | null {
 }
 
 // Shown under the workflow summary when the repo has workflows but is not
-// connected through the GitHub App (and the token could connect it).
+// connected through the GitHub App (with a Connect or Install bot link).
 function buildNotConnectedSection(res: MatchesResponse): HTMLElement | null {
-  const connect = buildConnectLink(res);
+  const connect = buildBotLink(res);
   if (!connect) return null;
   const wrap = document.createElement('div');
   wrap.className = 'tk-gh-github';
@@ -407,7 +453,7 @@ function buildEmptyState(res: MatchesResponse): HTMLElement {
     return wrap;
   }
 
-  const connect = buildConnectLink(res);
+  const connect = buildBotLink(res);
   if (connect) {
     lead.textContent = NOT_CONNECTED_TEXT;
     wrap.appendChild(lead);
@@ -494,7 +540,7 @@ function buildSummary(matches: MatchedWorkflow[], executionsUrl?: string): HTMLE
     const items = groups.get(kind) ?? [];
     if (items.length === 0 && !always) continue;
 
-    const stat = buildStat(kind, items.length, label, executionsUrl);
+    const stat = buildStat(kind, items.length, label, executionsUrl, latestRunAt(items));
     if (items.length > 0) {
       stat.tabIndex = 0;
       stat.classList.add('tk-gh-stat--interactive');
@@ -505,6 +551,42 @@ function buildSummary(matches: MatchedWorkflow[], executionsUrl?: string): HTMLE
   }
 
   return summary;
+}
+
+// The most recent run among the given workflows.
+function latestRunAt(matches: MatchedWorkflow[]): string | undefined {
+  let latest: string | undefined;
+  let latestMs = Number.NEGATIVE_INFINITY;
+  for (const m of matches) {
+    const t = m.lastRunAt ? Date.parse(m.lastRunAt) : Number.NaN;
+    if (!Number.isNaN(t) && t > latestMs) {
+      latestMs = t;
+      latest = m.lastRunAt;
+    }
+  }
+  return latest;
+}
+
+// A strip of the last executions, oldest to newest left to right, linking to
+// the workflow's executions list in the dashboard.
+function buildHistory(m: MatchedWorkflow): HTMLElement | null {
+  if (!m.history?.length) return null;
+  const strip = document.createElement('a');
+  strip.className = 'tk-gh-history';
+  strip.href = m.executionsUrl;
+  strip.target = '_blank';
+  strip.rel = 'noopener noreferrer';
+  const n = m.history.length;
+  strip.title = `Last ${n} execution${n === 1 ? '' : 's'}, oldest to newest. Click to open the executions list.`;
+  strip.setAttribute('aria-label', `${m.name}: last ${n} executions`);
+  for (const entry of [...m.history].reverse()) {
+    const bar = document.createElement('span');
+    // Same colours as the status icons: green passed, red failed, orange aborted.
+    bar.className = `tk-gh-history-bar tk-gh-history-bar--${statusKind(entry.status)}`;
+    bar.title = [entry.status ?? 'unknown', formatDateTime(entry.at)].filter(Boolean).join(' \u00b7 ');
+    strip.appendChild(bar);
+  }
+  return strip;
 }
 
 function buildPopover(titleText: string, items: MatchedWorkflow[]): HTMLElement {
@@ -518,10 +600,19 @@ function buildPopover(titleText: string, items: MatchedWorkflow[]): HTMLElement 
 
   const list = document.createElement('ul');
   list.className = 'tk-gh-list';
-  for (const m of items) list.appendChild(buildListItem(m));
+  for (const m of byNewestRun(items)) list.appendChild(buildListItem(m));
   popover.appendChild(list);
 
   return popover;
+}
+
+// Most recently run first; workflows without a run go last, then by name.
+function byNewestRun(items: MatchedWorkflow[]): MatchedWorkflow[] {
+  const at = (m: MatchedWorkflow): number => {
+    const t = m.lastRunAt ? Date.parse(m.lastRunAt) : Number.NaN;
+    return Number.isNaN(t) ? Number.NEGATIVE_INFINITY : t;
+  };
+  return [...items].sort((a, b) => at(b) - at(a) || a.name.localeCompare(b.name));
 }
 
 // Wire a body-mounted popover to a trigger element, opening to the right of the
@@ -607,7 +698,13 @@ function statusExecutionsUrl(executionsUrl: string | undefined, kind: StatusKind
   return viewId ? `${executionsUrl}/views/${viewId}` : executionsUrl;
 }
 
-function buildStat(kind: StatusKind, count: number, label: string, executionsUrl?: string): HTMLElement {
+function buildStat(
+  kind: StatusKind,
+  count: number,
+  label: string,
+  executionsUrl?: string,
+  lastRunAt?: string
+): HTMLElement {
   const stat = document.createElement('span');
   stat.className = 'tk-gh-stat';
 
@@ -632,6 +729,13 @@ function buildStat(kind: StatusKind, count: number, label: string, executionsUrl
   }
 
   stat.append(octicon(kind), value, text);
+  if (lastRunAt) {
+    const time = document.createElement('span');
+    time.className = 'tk-gh-stat-time';
+    time.textContent = formatDateTime(lastRunAt);
+    time.title = `Most recent ${label} run: ${relativeTime(lastRunAt)}`;
+    stat.appendChild(time);
+  }
   return stat;
 }
 
@@ -650,9 +754,11 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
   link.textContent = m.name;
   link.title = m.name;
 
+  // When it last ran (the icon already shows the status).
   const status = document.createElement('span');
   status.className = 'tk-gh-item-status';
-  status.textContent = m.status ?? 'no runs';
+  status.textContent = m.lastRunAt ? relativeTime(m.lastRunAt) : 'no runs';
+  if (m.lastRunAt) status.title = `${m.status ?? 'unknown'} \u00b7 ${formatDateTime(m.lastRunAt)}`;
 
   main.append(octicon(statusKind(m.status)), link, status);
   li.appendChild(main);
@@ -676,15 +782,17 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
     li.appendChild(paths);
   }
 
+  // Recent run history below the paths.
+  const history = buildHistory(m);
+  if (history) li.appendChild(history);
   return li;
 }
 
-// Find a sidebar section by heading text and insert a native-looking
-// "Tests Executed" section above it, cloning the row/cell/heading classes so it
-// visually matches GitHub regardless of the (possibly hashed) class names.
-const HEADER_TITLE = 'Test Results';
-
+// Find a sidebar section by heading text and insert a native-looking Testkube
+// section above it, cloning the row/cell/heading classes so it visually matches
+// GitHub regardless of the (possibly hashed) class names.
 function injectIntoSidebar(
+  title: string,
   content: HTMLElement,
   total: number,
   showRefresh: boolean,
@@ -722,12 +830,12 @@ function injectIntoSidebar(
     titleLink.href = headerUrl;
     titleLink.target = '_blank';
     titleLink.rel = 'noopener noreferrer';
-    titleLink.textContent = HEADER_TITLE;
+    titleLink.textContent = title;
     if (headerTooltip) titleLink.title = headerTooltip;
     newHeading.appendChild(titleLink);
   } else {
     const titleText = document.createElement('span');
-    titleText.textContent = HEADER_TITLE;
+    titleText.textContent = title;
     if (headerTooltip) titleText.title = headerTooltip;
     newHeading.appendChild(titleText);
   }

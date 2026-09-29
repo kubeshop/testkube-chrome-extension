@@ -19,7 +19,7 @@ Reference material for the Web Store developer dashboard. Keep it in sync with t
 
 Testkube for GitHub shows your Testkube TestWorkflow results where you work on code, in two places:
 
-- Repository pages: a Test Results section for workflows that run tests stored in the repository,
+- Repository pages: a Testkube Results section for workflows that run tests stored in the repository,
   with their latest status and links to each execution.
 - Pull requests: for repositories connected through the Testkube GitHub App, the workflows each pull
   request triggered, whichever repository their tests come from, with status, quality gates and the
@@ -28,7 +28,7 @@ Testkube for GitHub shows your Testkube TestWorkflow results where you work on c
 Requires a Testkube Control Plane (Cloud or on-prem) and an API token for it. See
 https://testkube.io/get-started to get a Control Plane.
 
-On repository pages, the Test Results section in the sidebar shows how many workflows ran, their
+On repository pages, the Testkube Results section in the sidebar shows how many workflows ran, their
 latest status (passed, failed, aborted, cancelled, running), and deep links into the Testkube
 dashboard. Hover a status to see the workflows behind it and jump straight to their most recent
 execution.
@@ -48,7 +48,7 @@ on-prem Control Planes by entering your own API and dashboard URLs.
 
 Features
 
-- Test Results sidebar section on repository pages, styled like GitHub's own sections
+- Testkube Results sidebar section on repository pages, styled like GitHub's own sections
 - Per-status hover popovers with links to the latest execution of each workflow
 - Environment switcher when results span several Testkube environments
 - Pull request panel with the latest GitHub App run, its test executions, and quality gates
@@ -71,7 +71,7 @@ Show Testkube test results on GitHub repository and pull request pages.
 | --- | --- |
 | `storage` | Stores the user's Testkube API token and settings, and caches control-plane responses for a few minutes. |
 | Host `https://api.testkube.io/*` | Calls the Testkube Cloud API to read organizations, environments, test workflows, executions, and GitHub App integration state for the repository or pull request being viewed. |
-| Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit from the page) to select which results to show, and injects the Test Results section into the sidebar. Only the repository name is sent to the configured Testkube host. |
+| Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit from the page) to select which results to show, and injects the Testkube Results section into the sidebar. Only the repository name is sent to the configured Testkube host. |
 | Optional hosts `https://*/*`, `http://*/*` | Users running an on-prem Testkube Control Plane enter their own API URL. Access to that single origin is requested at runtime, only when the user saves such a URL, and is used solely for the same Testkube API calls. No host is accessed without an explicit grant. |
 
 ## Data usage disclosure

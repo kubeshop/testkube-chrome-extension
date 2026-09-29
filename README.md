@@ -3,7 +3,7 @@
 A Chrome extension that shows your **Testkube** TestWorkflow results where you work on code, in two
 places:
 
-- **Repository pages:** a **"Test Results"** section in the repo sidebar for workflows that run tests
+- **Repository pages:** a **"Testkube Results"** section in the repo sidebar for workflows that run tests
   stored in the repository, with their latest status and links to each execution.
 - **Pull requests:** for repositories connected through the Testkube GitHub App, the workflows each
   pull request triggered, whichever repository their tests come from, with status, quality gates and
@@ -15,10 +15,15 @@ places:
 
 ## Features
 
-- **"Test Results" sidebar section** on the repo home / Code tab, styled to match GitHub's native
+- **"Testkube Results" sidebar section** on the repo home / Code tab, styled to match GitHub's native
   sections (e.g. Releases).
 - **Status summary** grouped into passed, failed, aborted, cancelled, and running, each with a hover
   popover listing the matching workflows.
+- **Run times**: each status row shows when its most recent run happened (e.g. "Sep 26 2026,
+  1:10 PM"), and each workflow in the popovers shows how long ago it last ran.
+- **Run history** under each workflow in the popovers: its last 10 executions, oldest to newest, in
+  the status colors (green passed, red failed, orange aborted); click it to open the workflow's
+  executions in Testkube.
 - **Deep links into Testkube:**
   - The section title links to the environment's TestWorkflows dashboard.
   - Each status label links to the matching prefiltered executions view (passed / failed / aborted /
@@ -74,7 +79,7 @@ automatically, so no IDs are required.
 
 The extension activates automatically on any GitHub repository that a TestWorkflow references (via
 its `content.git.uri`) in an environment your token can access — no configuration needed. The
-**Test Results** section appears in the right-hand sidebar:
+**Testkube Results** section appears in the right-hand sidebar:
 
 - Hover a status row to see the workflows in that bucket.
 - Click a workflow to jump to its latest execution in Testkube.
@@ -82,9 +87,10 @@ its `content.git.uri`) in an environment your token can access — no configurat
 - Use the environment dropdown (shown when results span multiple environments) to switch
   environments, and the refresh icon to re-fetch.
 
-On repos that have **no** matching workflows, the extension stays out of the way by default. If you
-add a repo to **Active on repositories** (see below), the section still appears there with a short
-note and a link to open Testkube.
+By default the section appears on **every** repository. On repos without matching workflows it
+shows a short note with links to install the Testkube Bot (or connect the repo, when the bot is
+already installed on it) and to open Testkube; without an API token it prompts you to set one. Narrow
+or clear **Active on repositories** (see below) to show the section only where there are results.
 
 ## Configuration
 
@@ -94,18 +100,18 @@ All configuration lives in the options page:
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
 | API base URL           | `https://api.testkube.io` | Change for self-managed control planes                                                |
 | Dashboard base URL     | `https://app.testkube.io` | Used to build deep links                                                              |
-| Active on repositories | (empty)                   | Extra wildcard patterns to also activate on, beyond auto-detected repos               |
+| Active on repositories | `*/*` (all repositories)  | Wildcard patterns where the section also shows without results; clear to hide it there |
 | Auto-refresh interval  | `0` (off)                 | Seconds between automatic refreshes while viewing a repo                              |
 | GitHub App integration | on                        | Query the GitHub App endpoints for connection state and pull request results          |
 | API token              | —                         | Stored locally in the browser, never synced                                           |
 
-By default the extension figures out where to be active from your Testkube data: it appears on any
-repo that has a matching workflow. **Active on repositories** lets you *additionally* light it up on
-repos that don't have a workflow yet — there it shows the "create a Test Workflow" prompt to
-encourage adding one. Enter one wildcard pattern per line, matched case-insensitively against the
-full `owner/repo` (e.g. `kubeshop/*`, `*/testkube*`, `my-org/my-repo`); `*` matches any run of
-characters and `?` matches a single character. Leaving it empty means the extension only appears on
-auto-detected repos.
+The section always appears on repos that have a matching workflow or a GitHub App connection.
+**Active on repositories** controls where it *also* appears without results, showing the setup and
+install prompts. The default `*/*` covers every repository. Enter one wildcard pattern per line,
+matched case-insensitively against the full `owner/repo` (e.g. `kubeshop/*`, `*/testkube*`,
+`my-org/my-repo`); `*` matches any run of characters and `?` matches a single character. Clearing it
+means the extension only appears on repos with results. Settings saved with an earlier version keep
+their stored value.
 
 **GitHub App integration** works with any API token that can read an environment. It is checked
 per environment, so if the token cannot access the GitHub App endpoints in some environment (for

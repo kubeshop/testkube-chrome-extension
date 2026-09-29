@@ -24,6 +24,17 @@ export interface MatchedWorkflow {
   environmentName: string;
   // Git paths referenced by this workflow for the current repo, linked to GitHub.
   paths?: WorkflowGitPath[];
+  // When the latest execution ran.
+  lastRunAt?: string;
+  // Up to the last 10 executions, newest first.
+  history?: ExecutionHistoryEntry[];
+  // The workflow's executions list in the dashboard.
+  executionsUrl: string;
+}
+
+export interface ExecutionHistoryEntry {
+  status?: TestWorkflowStatus;
+  at?: string;
 }
 
 // An environment that has at least one workflow matching the current repo.
@@ -73,13 +84,19 @@ export interface RepoGithubConnection {
   recentPullRequests: RecentPullRequest[];
 }
 
+export type AppInstallation = 'installed' | 'not-installed' | 'unknown';
+
 export interface RepoGithubInfo {
   capabilities: EnvironmentCapability[];
   // True when the control plane reports the feature as turned off.
   featureDisabled: boolean;
   connections: RepoGithubConnection[];
-  // Onboarding link when the repo is not connected to any capable environment
-  // yet (preselecting the repo when an installation already covers it).
+  // Whether one of the organization's GitHub App installations covers this
+  // repository. 'unknown' when it could not be checked (no environment where
+  // the token can use the GitHub App endpoints, or the lookup failed).
+  appInstallation: AppInstallation;
+  // Onboarding link for a repo the app is installed on but that is not
+  // connected to any capable environment yet.
   connectUrl?: string;
   connectEnvironmentName?: string;
 }
@@ -112,6 +129,8 @@ export interface MatchesResponse {
   dashboardUrl?: string;
   // GitHub App connection state for the repo (absent when the setting is off).
   github?: RepoGithubInfo;
+  // Whether the GitHub App integration setting is on (set even when not configured).
+  githubAppEnabled?: boolean;
   error?: string;
 }
 
@@ -150,6 +169,8 @@ export interface PullRequestResponse {
   featureDisabled: boolean;
   // True when the repo is connected in at least one capable environment.
   connected: boolean;
+  // Whether a GitHub App installation covers the repo (see RepoGithubInfo).
+  appInstallation: AppInstallation;
   runs: PullRequestRun[];
   connectUrl?: string;
   dashboardUrl?: string;

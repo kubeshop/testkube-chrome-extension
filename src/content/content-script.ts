@@ -1,7 +1,7 @@
 import {log, warn} from '../lib/log';
 import {type RepoRef, parseGithubRepoFromPath, repoMatchesPatterns} from '../lib/match';
 import type {GetMatchesRequest, GetPullRequestRequest, MatchesResponse, PullRequestResponse} from '../lib/messaging';
-import {getSettings} from '../lib/storage';
+import {getSettings, isConfigured} from '../lib/storage';
 
 import {PR_HOST_ID, removePrWidget, renderPrLoading, renderPrWidget, setOnPrRefresh} from './pr-widget';
 import {HOST_ID, removeWidget, renderLoading, renderWidget, setOnRefresh} from './widget';
@@ -23,6 +23,8 @@ let refreshTimer: ReturnType<typeof setInterval> | undefined;
 let dashboardBaseUrl = '';
 let repoFilters: string[] = [];
 let githubAppEnabled = true;
+// Whether an API token is set; decides the section title before results arrive.
+let configured = false;
 // Bumped whenever a setting that changes what we render flips, so responses
 // to requests started under the old setting are discarded instead of rendered.
 let settingsEpoch = 0;
@@ -85,7 +87,7 @@ async function updateRepo(ref: RepoRef, force: boolean): Promise<void> {
       log('re-rendering widget for', key, '(host was removed)');
       renderWidget(lastResponse);
     } else if (pending && manual) {
-      renderLoading(loadingDashboardUrl());
+      renderLoading(configured, loadingDashboardUrl());
     }
     return;
   }
@@ -95,7 +97,7 @@ async function updateRepo(ref: RepoRef, force: boolean): Promise<void> {
     lastResponse = null;
     pending = true;
     // Only flash a loading placeholder for repos we already know are active.
-    if (manual) renderLoading(loadingDashboardUrl());
+    if (manual) renderLoading(configured, loadingDashboardUrl());
     else removeWidget();
   }
   log('detected repo', key, force ? '- forcing refresh' : '- requesting matches from service worker');
@@ -146,8 +148,8 @@ async function updatePullRequest(ref: RepoRef, number: number, force: boolean): 
     if (lastPrResponse) {
       log('re-rendering PR panel for', key, '(host was removed)');
       renderPrWidget(lastPrResponse, readPageHeadSha(ref, number));
-    } else if (prPending && manual) {
-      renderPrLoading();
+    } else if (prPending && manual && configured) {
+      renderPrLoading(configured);
     }
     return;
   }
@@ -156,7 +158,7 @@ async function updatePullRequest(ref: RepoRef, number: number, force: boolean): 
   if (!force) {
     lastPrResponse = null;
     prPending = true;
-    if (manual) renderPrLoading();
+    if (manual && configured) renderPrLoading(configured);
     else removePrWidget();
   }
   log('detected pull request', key, force ? '- forcing refresh' : '- requesting run from service worker');
@@ -186,7 +188,9 @@ async function updatePullRequest(ref: RepoRef, number: number, force: boolean): 
   if (!now || `${keyFor(now)}#${pullRequestNumber(location.pathname)}` !== key) return;
 
   // Stay out of the way unless the repo is connected through the GitHub App,
-  // or the user allowlisted it (then show the connect / role notice).
+  // or the user allowlisted it (then show the connect or role notice). Without
+  // an API token there is nothing to show on pull request pages; the repo
+  // sidebar carries the setup notice instead.
   const show = res.configured && res.ok && res.enabled && (res.connected || manual);
   if (show || (manual && !res.ok)) {
     lastPrResponse = res;
@@ -277,6 +281,7 @@ function applyRefreshInterval(seconds: number): void {
 // the auto-refresh interval are available.
 void getSettings().then(s => {
   dashboardBaseUrl = s.dashboardBaseUrl;
+  configured = isConfigured(s);
   repoFilters = s.repoFilters;
   githubAppEnabled = s.githubAppIntegration;
   applyRefreshInterval(s.refreshIntervalSeconds);
@@ -296,7 +301,10 @@ function requery(): void {
 chrome.storage.onChanged.addListener((changes, area) => {
   // The API token lives in local storage; a new token means new data.
   if (area === 'local') {
-    if (changes.apiToken) requery();
+    if (changes.apiToken) {
+      configured = Boolean(String(changes.apiToken.newValue ?? '').trim());
+      requery();
+    }
     return;
   }
   if (area !== 'sync') return;
@@ -313,13 +321,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
     repoFilters = Array.isArray(changes.repoFilters.newValue) ? (changes.repoFilters.newValue as string[]) : [];
   }
   // Apply every changed value above before refreshing, so a single save that
-  // touches several settings is evaluated with all of them. A different
-  // control plane, dashboard, or GitHub App setting changes what (and where)
-  // the panels link to: fetch fresh data. A pattern change alone only needs
-  // the current page re-evaluated against the new allowlist.
-  if (changes.apiBaseUrl || changes.dashboardBaseUrl || changes.githubAppIntegration) {
+  // touches several settings is evaluated with all of them. Then fetch fresh
+  // data: a different control plane, dashboard or GitHub App setting changes
+  // what the panels show and link to, and a pattern change must be able to
+  // hide a panel that is already shown for the current page.
+  if (changes.apiBaseUrl || changes.dashboardBaseUrl || changes.githubAppIntegration || changes.repoFilters) {
     requery();
-  } else if (changes.repoFilters) {
-    void update();
   }
 });

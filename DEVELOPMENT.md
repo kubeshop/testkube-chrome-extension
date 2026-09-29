@@ -121,12 +121,14 @@ GitHub repo page ──(owner/repo)──▶ content script
                                 api.testkube.io
                                        │
                                        ▼
-              injected "Test Results" sidebar section + per-status popovers
+              injected "Testkube Results" sidebar section + per-status popovers
                           + environment dropdown with deep links
 ```
 
+- The section title is **Testkube Results**, or just **Testkube** while no API token is configured
+  (the pull request panel only appears once a token is set).
 - The **content script** runs on `github.com`, parses `owner/repo` from the URL, and asks the
-  background worker for matches. It injects a native-looking "Test Results" section into the repo
+  background worker for matches. It injects a native-looking "Testkube Results" section into the repo
   sidebar (above Releases), with the title linking to the dashboard like GitHub's own section
   headers, and re-injects across GitHub's Turbo (soft) navigation. It also shows a loading state on
   first query and drives the optional auto-refresh interval.
@@ -209,8 +211,26 @@ Activity is **hybrid**:
   the same `GET_MATCHES` query the worker already runs (`matches.length > 0`) — the worker fetches
   all workflows for all environments once per TTL and caches them, so the per-repo check is
   cache-backed.
-- **Manual**: the optional **Active on repositories** patterns mark additional repos as active even
-  when they have no workflow yet (these show the create-a-workflow empty state).
+- **Manual**: the **Active on repositories** patterns mark additional repos as active even when
+  they have no results (these show the empty state). The default is `*/*`, so every repo is active
+  unless the user narrows or clears the list.
+- **Bot links in the empty states**: when the repo is not connected, the panels offer **Install
+  Testkube Bot** when no GitHub App installation covers the repo,
+  or **Connect Testkube Bot** (dashboard onboarding with the repo preselected) when one does. The
+  worker reports this as `appInstallation`: `installed` when the repo resolves to a GitHub repository
+  id through the installations, `not-installed` when it does not, and `unknown` when it could not be
+  checked (no environment where the token can use the GitHub App endpoints, or a failed lookup), in
+  which case no bot link is shown. The not-configured notice offers the install link unless the
+  GitHub App integration is switched off. Changing any setting, including the patterns, re-queries
+  open tabs, so clearing a pattern hides a panel that is already shown.
+- **Install link**: [`src/lib/bot.ts`](src/lib/bot.ts) points **Install Testkube Bot** at
+  `https://github.com/apps/<slug>/installations/new?suggested_target_id=<owner id>&repository_ids[]=<repo id>`,
+  so GitHub opens the installation with the owner and repository preselected. The ids come from the
+  `octolytics-dimension-*` meta tags GitHub puts on repository pages, used only when their
+  `repository_nwo` matches the current repo. The install needs no signed `state`: the control
+  plane's callback treats a state-less install like a Marketplace one and continues in the
+  dashboard onboarding. The app slug is `TESTKUBE_BOT_APP_SLUG` (`testkube-bot`); if it is
+  emptied, the link falls back to the Marketplace listing.
 
 `update()` in [`src/content/content-script.ts`](src/content/content-script.ts) computes
 `manual = repoMatchesPatterns(ref, repoFilters)` (an empty list matches nothing). It shows the
@@ -249,7 +269,7 @@ Defaults and storage live in [`src/lib/storage.ts`](src/lib/storage.ts):
 | ---------------------- | ------------------------- | ---------------------- |
 | API base URL           | `https://api.testkube.io` | `chrome.storage.sync`  |
 | Dashboard base URL     | `https://app.testkube.io` | `chrome.storage.sync`  |
-| Active on repositories | `[]` (auto-detect only)   | `chrome.storage.sync`  |
+| Active on repositories | `['*/*']` (all repos)     | `chrome.storage.sync`  |
 | Auto-refresh interval  | `0` (off)                 | `chrome.storage.sync`  |
 | GitHub App integration | `true`                    | `chrome.storage.sync`  |
 | API token              | —                         | `chrome.storage.local` |
