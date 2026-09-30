@@ -18,6 +18,7 @@ Every change that affects what users see or what the extension does must update 
 | [README.md](README.md) | Features, UI text, defaults, settings, requirements, install or setup steps change. Keep the Features list, Usage, the Configuration table and Privacy & security accurate. |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Architecture, request flow, endpoints used, caching, deep links, message contract, project layout (new files in `src/`), scripts or tooling change. |
 | [STORE_LISTING.md](STORE_LISTING.md) | The store description, features, permission justifications or data usage disclosure change. Say in the PR that the Web Store dashboard needs the same update with the next upload. |
+| [CHANGELOG.md](CHANGELOG.md) | **Any user-facing change.** Add a line under `## [Unreleased]` (Added / Changed / Fixed), written for users, not developers. Docs-only and tooling changes need no entry. |
 | [PRIVACY.md](PRIVACY.md) | **Anything the extension reads, stores or sends changes**, including new requests to any host (github.com included). Update the "Last updated" date. It is the public privacy policy linked from the store. |
 | `manifest.config.ts` `description` | The one-line summary changes. It is also the store summary: at most 132 characters, shown verbatim. |
 | Options page hint texts (`src/options/App.tsx`) | A setting's meaning or default changes. |
@@ -128,11 +129,14 @@ npm run package       # type-check, build and zip
 
 ## Releases
 
-- Bump `version` in `package.json` (`npm version X.Y.Z --no-git-tag-version`) in the release PR.
-  The Chrome Web Store rejects a version it has already seen.
+- Bump `version` in `package.json` (`npm version X.Y.Z --no-git-tag-version`) in the release PR,
+  and in CHANGELOG.md turn `## [Unreleased]` into `## [X.Y.Z] - YYYY-MM-DD`, add a fresh empty
+  `## [Unreleased]` above it, and update the compare links at the bottom. The Chrome Web Store
+  rejects a version it has already seen.
 - After merging, tag the merged commit `vX.Y.Z` (annotated) and push the tag. The release workflow
-  checks the tag matches `package.json`, builds, and attaches `testkube-for-github-X.Y.Z.zip` to a
-  GitHub Release. Upload that zip to the Web Store, and update the listing texts there from
+  checks the tag matches `package.json`, builds, and creates a GitHub Release with that version's
+  CHANGELOG.md section as its notes (it fails if the section is missing) and
+  `testkube-for-github-X.Y.Z.zip` attached. Upload that zip to the Web Store, and update the listing texts there from
   STORE_LISTING.md when they changed.
 
 ## Ask instead of guessing

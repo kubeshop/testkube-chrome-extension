@@ -37,10 +37,26 @@ jobs:
           npm run package
           echo "zip=$(ls testkube-for-github-*.zip)" >> "$GITHUB_OUTPUT"
 
+      # The release notes are the tag's section of CHANGELOG.md; a release
+      # without one fails here rather than shipping without notes.
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found && !/^\[[^]]+\]: / { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > release-notes.md
+          if ! grep -q . release-notes.md; then
+            echo "CHANGELOG.md has no section for $version" >&2
+            exit 1
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.pkg.outputs.zip }}
+          body_path: release-notes.md
           generate_release_notes: true
 
       - uses: actions/upload-artifact@v4

@@ -152,6 +152,10 @@ already trusts it (open the API URL in a normal tab once, or install the CA).
 - Scans every environment the token can access on each repo page (results cached for a few minutes);
   a large number of environments/workflows increases request fan-out.
 
+## Changelog
+
+What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
+
 ## Contributing & development
 
 Build instructions, architecture, and implementation details live in

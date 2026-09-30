@@ -59,8 +59,9 @@ CI (`.github/workflows/ci.yml`) type-checks, builds and packages every pull requ
    ```
 
 The release workflow (`.github/workflows/release.yml`) checks that the tag matches
-`package.json`, builds, runs `npm run package`, and creates a GitHub Release with the zip attached
-and auto-generated notes.
+`package.json`, builds, runs `npm run package`, and creates a GitHub Release with the zip attached.
+The release notes are the version's section of [CHANGELOG.md](CHANGELOG.md), followed by GitHub's
+list of merged pull requests; the workflow fails if the changelog has no section for the tag.
 
 When the Chrome Web Store listing exists, the same workflow can also upload the zip to the store
 as a draft (it never publishes). Configure a repository **variable** `CHROME_EXTENSION_ID` (the
