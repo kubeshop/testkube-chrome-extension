@@ -403,17 +403,28 @@ function buildRecentTests(pr: RecentPullRequest): HTMLElement | null {
   return summary;
 }
 
-// The time column of an execution row: how long ago it ran, with the status
-// and exact time on hover (the icon already shows the status).
-export function buildRunTime(status: string | undefined, at: string | undefined): HTMLElement {
+// Statuses whose icon is unique (check, cross, orange disc). Every other
+// status shares a grey or yellow disc, so its row also shows the status word.
+const DISTINCT_ICON_KINDS: ReadonlySet<StatusKind> = new Set(['passed', 'failed', 'aborted']);
+
+// The status and time column of an execution row: how long ago it ran, with
+// the exact time on hover. The status is always in the text for screen readers
+// (the icon is decorative), and visible too when the icon alone is ambiguous,
+// so it never depends on a mouse hover.
+export function buildRunTime(status: string | undefined, at: string | undefined, emptyText = 'queued'): HTMLElement {
   const el = document.createElement('span');
   el.className = 'tk-gh-item-status';
-  if (at) {
-    el.textContent = relativeTime(at);
-    el.title = `${status ?? 'unknown'} \u00b7 ${formatDateTime(at)}`;
-  } else {
-    el.textContent = status ?? 'queued';
+  if (!at) {
+    el.textContent = status ?? emptyText;
+    return el;
   }
+  const word = status ?? 'unknown';
+  const visibleStatus = !DISTINCT_ICON_KINDS.has(statusKind(status));
+  const label = document.createElement('span');
+  label.className = visibleStatus ? '' : 'tk-gh-sr-only';
+  label.textContent = visibleStatus ? `${word} \u00b7 ` : `${word}, `;
+  el.append(label, relativeTime(at));
+  el.title = `${word} \u00b7 ${formatDateTime(at)}`;
   return el;
 }
 
@@ -774,13 +785,7 @@ function buildListItem(m: MatchedWorkflow): HTMLElement {
   link.textContent = m.name;
   link.title = m.name;
 
-  // When it last ran (the icon already shows the status).
-  const status = document.createElement('span');
-  status.className = 'tk-gh-item-status';
-  status.textContent = m.lastRunAt ? relativeTime(m.lastRunAt) : 'no runs';
-  if (m.lastRunAt) status.title = `${m.status ?? 'unknown'} \u00b7 ${formatDateTime(m.lastRunAt)}`;
-
-  main.append(octicon(statusKind(m.status)), link, status);
+  main.append(octicon(statusKind(m.status)), link, buildRunTime(m.status, m.lastRunAt, 'no runs'));
   li.appendChild(main);
 
   if (m.paths?.length) {

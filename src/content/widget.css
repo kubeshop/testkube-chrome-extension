@@ -553,3 +553,16 @@
   background: var(--fgColor-attention, #9a6700);
   opacity: 1;
 }
+
+/* Text for screen readers only (e.g. the status next to a run time). */
+.tk-gh-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
