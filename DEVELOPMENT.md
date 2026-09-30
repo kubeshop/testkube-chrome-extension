@@ -173,9 +173,13 @@ Git Integration endpoints (the ones behind the Testkube GitHub App):
   (`/onboarding?ref=github-app-installation&organization_id=…&environment_id=…&repository_id=…`)
   when an installation already covers the repo, or **Install Testkube Bot** when none does (see
   "Install link" below).
-- On `/owner/repo/pull/N` the content script sends `GET_PULL_REQUEST`. The worker pages through the
-  repo's event log (newest first, bounded) for `pull_request` / `issue_comment` events with that
-  `issueNumber`, takes the newest per environment, and reads the head SHA from
+- On `/owner/repo/pull/N` the content script sends `GET_PULL_REQUEST`, with the PR's opening time
+  (the earliest `relative-time` on the page). The worker requests the repo's events with
+  `issueNumber=N&perPage=100`: control planes that support the filter return only that PR's
+  events; older ones ignore the parameter and return the whole log, newest first, so the worker
+  pages back until it finds a `pull_request` / `issue_comment` event for the PR that has a run,
+  reaches events older than the PR, or hits 10 pages. It takes the PR's newest event with a run
+  (else its newest event) per environment, and reads the head SHA from
   `GET .../executions/{executionId}/integration-events`. The PR panel compares that SHA with the
   PR's current head (the last `/pull/N/commits/<sha>` link in the timeline) and flags stale
   results. The panel is only injected when an API token is set and the repo is connected (or
@@ -339,7 +343,8 @@ GitHub App integration (only when enabled; the environment `read` role suffices)
 
 - `GET /organizations/{org}/environments/{env}/integrations/github/integrations`
 - `GET /organizations/{org}/environments/{env}/integrations/github/repositories?q=owner/repo`
-- `GET /organizations/{org}/environments/{env}/integrations/github/repositories/{repositoryId}/events`
+- `GET /organizations/{org}/environments/{env}/integrations/github/repositories/{repositoryId}/events` (with
+  `issueNumber` on pull request pages)
 - `GET /organizations/{org}/environments/{env}/executions/{executionId}/integration-events`
 
 ## Limitations (current scope)
@@ -347,8 +352,9 @@ GitHub App integration (only when enabled; the environment `read` role suffices)
 - Workflow matching is repo-level; PR awareness comes from the GitHub App events (no branch /
   commit pages yet).
 - Injects on the repo home / Code tab and the PR conversation tab only.
-- The events endpoint has no PR-number filter, so the PR lookup pages through the repo's newest
-  events (up to 3 pages of 50); a very busy repo could push an old PR past that bound.
+- On control planes without the events endpoint's `issueNumber` filter, the PR lookup pages back
+  through the repo's events (up to 10 pages of 100, stopping at the PR's opening time); a PR whose
+  last run is more than 1,000 repository events old on a very busy repo is not found.
 - Scans every environment the token can access on each repo page (cached for a few minutes); large
   numbers of environments/workflows increase the request fan-out. A short auto-refresh interval
   re-fetches all environments each tick.

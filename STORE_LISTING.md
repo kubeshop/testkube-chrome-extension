@@ -73,15 +73,16 @@ Show Testkube test results on GitHub repository and pull request pages.
 | --- | --- |
 | `storage` | Stores the user's Testkube API token and settings, and caches control-plane responses for a few minutes. |
 | Host `https://api.testkube.io/*` | Calls the Testkube Cloud API to read organizations, environments, test workflows, executions, and GitHub App integration state for the repository or pull request being viewed. |
-| Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit from the page) to select which results to show, and injects the Testkube Results section into the sidebar. Reads the repository's and owner's numeric ids from the page metadata to build the Testkube Bot installation link, and checks with a same-origin request to github.com whether the signed-in user may open that installation directly. Only the repository name is sent to the configured Testkube host. |
+| Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit and opening time from the page) to select which results to show, and injects the Testkube Results section into the sidebar. Reads the repository's and owner's numeric ids from the page metadata to build the Testkube Bot installation link, and checks with a same-origin request to github.com whether the signed-in user may open that installation directly. Only the repository name and, on pull request pages, the pull request number are sent to the configured Testkube host. |
 | Optional hosts `https://*/*`, `http://*/*` | Users running an on-prem Testkube Control Plane enter their own API URL. Access to that single origin is requested at runtime, only when the user saves such a URL, and is used solely for the same Testkube API calls. No host is accessed without an explicit grant. |
 
 ## Data usage disclosure
 
 - **Data collected:** Authentication information (the user's Testkube API token, entered by the
   user). Website content: the repository name (`owner/repo`) of the GitHub page being viewed, sent
-  to the user's Testkube control plane as a query parameter. The pull request number is used only
-  locally to select results. The repository's and owner's numeric GitHub ids are used only locally,
+  to the user's Testkube control plane as a query parameter, and on pull request pages the pull
+  request number, sent the same way to fetch that pull request's runs. The pull request's opening
+  time is read from the page and used only locally. The repository's and owner's numeric GitHub ids are used only locally,
   in the Testkube Bot installation link and a status-only check of that link on github.com.
 - **Not collected:** personal communications, financial or payment information, health
   information, location, web history, user activity, personally identifiable information.

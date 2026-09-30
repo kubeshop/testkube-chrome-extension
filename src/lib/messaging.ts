@@ -114,6 +114,9 @@ export interface GetPullRequestRequest {
   owner: string;
   repo: string;
   number: number;
+  // When the pull request was opened (earliest time on its page); bounds how
+  // far back the event log is searched.
+  openedAt?: string;
   force?: boolean;
 }
 
