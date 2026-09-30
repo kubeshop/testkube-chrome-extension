@@ -1,7 +1,8 @@
 # Development
 
 Implementation, build, and architecture notes for the Testkube GitHub Chrome extension. For
-installation and usage, see [README.md](README.md).
+installation and usage, see [README.md](README.md). Conventions for contributors and coding agents
+(docs to update with each change, wording, git workflow, releases) are in [AGENTS.md](AGENTS.md).
 
 ## Tech stack
 
