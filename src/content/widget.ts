@@ -134,10 +134,22 @@ const ICON_PATHS: Record<StatusKind, string> = {
   unknown: DISC,
 };
 
+// In-progress runs spin, like the running icon in the Testkube dashboard: a
+// faint full ring with a quarter arc on top, drawn at the same 16px weight as
+// the other status icons.
+const SPINNER_SVG =
+  '<svg class="tk-gh-octicon tk-gh-spinner" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">' +
+  '<circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="2.5" opacity="0.3"></circle>' +
+  '<path d="M8 1.5a6.5 6.5 0 0 1 6.5 6.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>' +
+  '</svg>';
+
 export function octicon(kind: StatusKind): HTMLElement {
   const span = document.createElement('span');
   span.className = `tk-gh-icon tk-gh-icon--${kind}`;
-  span.innerHTML = `<svg class="tk-gh-octicon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="${ICON_PATHS[kind]}"></path></svg>`;
+  span.innerHTML =
+    kind === 'running'
+      ? SPINNER_SVG
+      : `<svg class="tk-gh-octicon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="${ICON_PATHS[kind]}"></path></svg>`;
   return span;
 }
 
