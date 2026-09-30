@@ -1,6 +1,6 @@
 # Privacy Policy — Testkube for GitHub
 
-_Last updated: 2026-09-17_
+_Last updated: 2026-09-30_
 
 **Testkube for GitHub** is a browser extension that shows Testkube test results on GitHub
 repository and pull request pages. This policy describes what data the extension handles and
@@ -28,19 +28,26 @@ where it goes.
   Testkube can return the matching workflows and connection state. On pull request pages the
   extension downloads the repository's recent integration events from Testkube and selects the
   ones for the pull request you are viewing locally; the pull request number itself is not sent.
+- When it shows the **Install Testkube Bot** link, the extension also sends one request to
+  `github.com` itself, for the Testkube Bot's installation page for the repository you are viewing.
+  Your browser sends it with your existing GitHub session, like any GitHub page you open. The
+  extension uses only whether GitHub answers it successfully, to decide whether the link can open
+  that installation directly or should open GitHub's account picker. Nothing from the response is
+  stored or sent anywhere else.
 - The extension **does not send any data to the extension's authors or to any third party**. It
   contains no analytics, telemetry, advertising, or tracking.
 
 ## What the extension reads from GitHub pages
 
 The extension runs on `github.com` pages to read the repository name and pull request number from
-the page URL, and the pull request's current head commit from the page, in order to look up and
-display matching results. It does not read or transmit any other page content, and it does not
-access your GitHub account or credentials.
+the page URL, the pull request's current head commit from the page, and the numeric ids of the
+repository and its owner from the page's metadata, in order to look up and display matching results
+and to build the Testkube Bot installation link. The ids are only used in that link. It does not
+read or transmit any other page content, and it does not read your GitHub credentials.
 
 ## Optional host access
 
-If you configure a self-managed Testkube control plane, Chrome asks once whether the extension may
+If you configure an on-prem Testkube Control Plane, Chrome asks once whether the extension may
 access that host. The grant is used solely to send the requests described above to that host.
 
 ## Data retention and deletion
