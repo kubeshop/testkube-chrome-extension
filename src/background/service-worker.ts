@@ -355,6 +355,7 @@ function recentPullRequests(
       id: c.id,
       workflowName: c.workflowName,
       status: c.status,
+      at: c.finishedAt ?? c.scheduledAt,
       url: buildExecutionDetailsUrl(s, orgId, envId, c.id),
     })),
     updatedAt: e.updatedAt ?? e.createdAt,
@@ -671,6 +672,7 @@ async function handleGetPullRequest(
         id: c.id,
         workflowName: c.workflowName,
         status: c.status,
+        at: c.finishedAt ?? c.scheduledAt,
         url: buildExecutionDetailsUrl(settings, orgId, env.id, c.id),
       }));
 

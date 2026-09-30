@@ -403,6 +403,20 @@ function buildRecentTests(pr: RecentPullRequest): HTMLElement | null {
   return summary;
 }
 
+// The time column of an execution row: how long ago it ran, with the status
+// and exact time on hover (the icon already shows the status).
+export function buildRunTime(status: string | undefined, at: string | undefined): HTMLElement {
+  const el = document.createElement('span');
+  el.className = 'tk-gh-item-status';
+  if (at) {
+    el.textContent = relativeTime(at);
+    el.title = `${status ?? 'unknown'} \u00b7 ${formatDateTime(at)}`;
+  } else {
+    el.textContent = status ?? 'queued';
+  }
+  return el;
+}
+
 function buildTestsPopover(titleText: string, tests: PullRequestTest[]): HTMLElement {
   const popover = document.createElement('div');
   popover.className = 'tk-gh-popover';
@@ -420,10 +434,7 @@ function buildTestsPopover(titleText: string, tests: PullRequestTest[]): HTMLEle
     main.className = 'tk-gh-item-main';
     const link = externalLink(c.url, c.workflowName);
     link.title = c.workflowName;
-    const status = document.createElement('span');
-    status.className = 'tk-gh-item-status';
-    status.textContent = c.status ?? 'queued';
-    main.append(octicon(statusKind(c.status)), link, status);
+    main.append(octicon(statusKind(c.status)), link, buildRunTime(c.status, c.at));
     li.appendChild(main);
     list.appendChild(li);
   }
