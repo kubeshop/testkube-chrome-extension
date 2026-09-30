@@ -1,6 +1,6 @@
 # Privacy Policy — Testkube for GitHub
 
-_Last updated: 2026-10-01_
+_Last updated: 2026-09-30_
 
 **Testkube for GitHub** is a browser extension that shows Testkube test results on GitHub
 repository and pull request pages. This policy describes what data the extension handles and
