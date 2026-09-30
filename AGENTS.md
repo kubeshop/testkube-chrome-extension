@@ -73,7 +73,8 @@ Git history and PR edit histories are public too: get the wording right before p
 - The pull request panel shows nothing until an API token is configured; the repository sidebar
   carries the setup notice.
 - Status colors are shared by icons and run history: green passed, red failed, orange aborted,
-  yellow running, grey otherwise. Keep icon sizes consistent (full 16px discs).
+  yellow running, grey otherwise. Keep icon sizes consistent (full 16px discs). In-progress runs use
+  a spinning ring, like the dashboard's running icon, and stay still under reduced motion.
 - Popover lists are ordered most recently run first.
 - The Install Testkube Bot link must never lead to a 404: use the direct installation URL only after
   the permission check succeeds (see DEVELOPMENT.md).
