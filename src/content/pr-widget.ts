@@ -7,6 +7,7 @@ import {
   buildInstallBotLink,
   buildKubieIcon,
   buildRefreshButton,
+  buildRunTime,
   ensureStyles,
   externalLink,
   headerTitle,
@@ -168,10 +169,7 @@ function buildRun(run: PullRequestRun, pageHeadSha: string | undefined, showEnv:
       li.className = 'tk-gh-pr-test';
       const link = externalLink(c.url, c.workflowName);
       link.title = c.workflowName;
-      const status = document.createElement('span');
-      status.className = 'tk-gh-item-status';
-      status.textContent = c.status ?? 'queued';
-      li.append(octicon(statusKind(c.status)), link, status);
+      li.append(octicon(statusKind(c.status)), link, buildRunTime(c.status, c.at));
       list.appendChild(li);
     }
     wrap.appendChild(list);

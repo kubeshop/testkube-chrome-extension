@@ -45,8 +45,9 @@ places:
     GitHub's account picker.
   - **Pull request pages** get a **Testkube Results** sidebar panel with the latest run for that PR:
     overall status, the head commit it ran for (flagged **stale** when the PR has moved on), one
-    row per test workflow execution, quality gates, and a link to the AI analysis chat when one
-    was performed.
+    row per test workflow execution showing how long ago it ran (plus its status when the icon
+    alone is ambiguous, e.g. running; exact time on hover), quality gates, and a link to the AI
+    analysis chat when one was performed.
 
 The organization and the environments your token can access are discovered automatically — you only
 provide a token. No Testkube backend changes are required.

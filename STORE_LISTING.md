@@ -34,14 +34,14 @@ into the Testkube dashboard. Hover a status to see the workflows behind it, newe
 a strip of its last 10 runs, and jump straight to their most recent execution.
 
 For repositories connected through the Testkube GitHub App, the sidebar also shows the connection
-status and recent pull request runs, and the pull request conversation tab gets a
-Testkube panel with the latest run for that PR: overall status, the commit it ran for (flagged when
-the PR has moved on), one row per workflow execution, quality gates, and a link to the AI analysis
-when one was performed. Repositories that are not connected yet get a one-click link to install
-the Testkube Bot (opening the installation for that repository when you may install it there) or,
-when it is already installed, to connect them. The GitHub App features require the Testkube GitHub App to be enabled on your Control Plane
-and an API token with access to its integration endpoints; otherwise the extension shows workflow
-results only.
+status and recent pull request runs, and the pull request conversation tab gets a Testkube panel
+with the latest run for that PR: overall status, the commit it ran for (flagged when the PR has
+moved on), one row per workflow execution with when it ran, quality gates, and a link to the AI
+analysis when one was performed. Repositories that are not connected yet get a one-click link to
+install the Testkube Bot (opening the installation for that repository when you may install it
+there) or, when it is already installed, to connect them. The GitHub App features require the
+Testkube GitHub App to be enabled on your Control Plane and an API token with access to its
+integration endpoints; otherwise the extension shows workflow results only.
 
 Setup takes a minute: paste a Testkube API token in the options page. The extension discovers your
 organization and environments automatically. It works with Testkube Cloud out of the box and with

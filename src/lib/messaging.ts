@@ -138,6 +138,8 @@ export interface PullRequestTest {
   id: string;
   workflowName: string;
   status?: TestWorkflowStatus;
+  // When it ran: finished, else scheduled.
+  at?: string;
   url: string;
 }
 
