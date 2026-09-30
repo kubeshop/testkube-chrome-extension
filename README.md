@@ -22,8 +22,8 @@ places:
 - **Run times**: each status row shows when its most recent run happened (e.g. "Sep 26 2026,
   1:10 PM"), and each workflow in the popovers shows how long ago it last ran.
 - **Run history** under each workflow in the popovers: its last 10 executions, oldest to newest, in
-  the status colors (green passed, red failed, orange aborted); click it to open the workflow's
-  executions in Testkube.
+  the status colors (green passed, red failed, orange aborted, yellow running); click it to open the
+  workflow's executions in Testkube. Popovers list the most recently run workflow first.
 - **Deep links into Testkube:**
   - The section title links to the environment's TestWorkflows dashboard.
   - Each status label links to the matching prefiltered executions view (passed / failed / aborted /
@@ -38,9 +38,12 @@ places:
     GitHub's own card with the PR title; hovering the pass count (e.g. "3/4 passed") lists the
     tests that ran for it, each linking to its execution. Runs with an AI analysis link straight
     to its chat.
-  - Repos that are not connected yet get a **Connect Testkube Bot** link straight into the
-    dashboard's onboarding flow (preselecting the repo when the app is already installed on it).
-  - **Pull request pages** get a **Testkube** sidebar panel with the latest run for that PR:
+  - Repos that are not connected yet get a link to set that up: **Install Testkube Bot** when the
+    Testkube GitHub App is not installed on the repo, or **Connect Testkube Bot** (the dashboard's
+    onboarding, with the repo preselected) when it is. If you may install apps on the repo's owner,
+    the install link opens the installation for that repository directly; otherwise it opens
+    GitHub's account picker.
+  - **Pull request pages** get a **Testkube Results** sidebar panel with the latest run for that PR:
     overall status, the head commit it ran for (flagged **stale** when the PR has moved on), one
     row per test workflow execution, quality gates, and a link to the AI analysis chat when one
     was performed.
@@ -50,8 +53,8 @@ provide a token. No Testkube backend changes are required.
 
 ## Installation
 
-Install **Testkube for GitHub** from the Chrome Web Store (link to follow once the listing is
-published), or load a build unpacked:
+Install **Testkube for GitHub** from the Chrome Web Store, or load a build unpacked (every
+[release](https://github.com/kubeshop/testkube-chrome-extension/releases) has the zip attached):
 
 1. Download or build the extension (see [DEVELOPMENT.md](DEVELOPMENT.md) to build from source).
 2. Open `chrome://extensions` in Chrome (or any Chromium-based browser).
@@ -89,8 +92,9 @@ its `content.git.uri`) in an environment your token can access — no configurat
 
 By default the section appears on **every** repository. On repos without matching workflows it
 shows a short note with links to install the Testkube Bot (or connect the repo, when the bot is
-already installed on it) and to open Testkube; without an API token it prompts you to set one. Narrow
-or clear **Active on repositories** (see below) to show the section only where there are results.
+already installed on it) and to open Testkube. Until an API token is set, the section is titled just
+**Testkube** and prompts you to set one; pull request pages show nothing until then. Narrow or clear
+**Active on repositories** (see below) to show the section only where there are results.
 
 ## Configuration
 
@@ -98,7 +102,7 @@ All configuration lives in the options page:
 
 | Setting                | Default                   | Notes                                                                                 |
 | ---------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
-| API base URL           | `https://api.testkube.io` | Change for self-managed control planes                                                |
+| API base URL           | `https://api.testkube.io` | Change for on-prem Control Planes                                                     |
 | Dashboard base URL     | `https://app.testkube.io` | Used to build deep links                                                              |
 | Active on repositories | `*/*` (all repositories)  | Wildcard patterns where the section also shows without results; clear to hide it there |
 | Auto-refresh interval  | `0` (off)                 | Seconds between automatic refreshes while viewing a repo                              |
@@ -133,8 +137,10 @@ already trusts it (open the API URL in a normal tab once, or install the CA).
 
 - Your API token is stored locally in the browser (`chrome.storage.local`) and is never synced or
   sent anywhere except your configured Testkube control plane. Treat it as a credential.
-- The extension only makes requests to the configured Testkube API host; it does not send data to
-  any third party.
+- The extension sends data only to the configured Testkube API host; it does not send data to any
+  third party. On github.com it also checks, with your existing GitHub session, whether you may
+  install the Testkube Bot on a repository's owner, so the install link can open the right page.
+  Only the response status is used.
 - Full details in the [privacy policy](PRIVACY.md).
 
 ## Limitations

@@ -135,15 +135,17 @@ GitHub repo page ──(owner/repo)──▶ content script
 - The **background service worker** holds the token and, on each request, discovers the org
   (`GET /organizations` — a token maps to one org) and the environments the token may access
   (`GET /organizations/{org}/environments`). It scans each environment's workflows, matches each
-  workflow's `content.git.uri` against the current repo, and fetches the latest execution (status +
-  id) for matched workflows. Discovery and per-environment workflow lists are cached for a few
+  workflow's `content.git.uri` against the current repo, and fetches the last 10 executions of each
+  matched workflow in one request (`?pageSize=10`): the newest gives the status, run time and a
+  direct link, the rest the run history. Discovery and per-environment workflow lists are cached for a few
   minutes; manual refresh and auto-refresh bypass the cache.
 - The **panel (widget)** groups matches by status (passed, failed, aborted, cancelled, running),
-  each with a hover popover listing that status's workflows. An environment dropdown filters to a
+  each row showing the time of its most recent run and opening a hover popover with that status's
+  workflows, most recently run first. Each popover row shows how long ago the workflow ran and a
+  strip of its last 10 runs linking to its executions list. An environment dropdown filters to a
   single environment when matches span more than one, and a refresh icon re-queries on demand. When
-  there are no matches (but the repo is configured/reachable and allowed by the repo allowlist), it
-  renders an empty state encouraging the user to create a Test Workflow, with links to the docs and
-  the dashboard.
+  there are no matches (but the repo is allowed by the repo allowlist), it renders an empty state
+  with the Testkube Bot install or connect link and a link to the dashboard.
 - The **options page** stores the base URLs, the auto-refresh interval, the repo allowlist, the
   GitHub App toggle, and the API token only.
 
@@ -165,16 +167,18 @@ Git Integration endpoints (the ones behind the Testkube GitHub App):
   (cached, including misses). A connection exists when that id appears in an environment's
   integrations list; its first page of
   `GET .../integrations/github/repositories/{repositoryId}/events` yields the recent PR runs.
-- Repos that are not connected anywhere get a **connect** link into the dashboard's onboarding
-  flow (`/onboarding?ref=github-app-installation&organization_id=…&environment_id=…`), with
-  `repository_id=…` appended when an installation already covers the repo. Repos the app is not
-  installed on get the same link without it, so the flow can start with installing the app.
+- Repos that are not connected anywhere get a bot link: **Connect Testkube Bot** into the
+  dashboard's onboarding flow
+  (`/onboarding?ref=github-app-installation&organization_id=…&environment_id=…&repository_id=…`)
+  when an installation already covers the repo, or **Install Testkube Bot** when none does (see
+  "Install link" below).
 - On `/owner/repo/pull/N` the content script sends `GET_PULL_REQUEST`. The worker pages through the
   repo's event log (newest first, bounded) for `pull_request` / `issue_comment` events with that
   `issueNumber`, takes the newest per environment, and reads the head SHA from
   `GET .../executions/{executionId}/integration-events`. The PR panel compares that SHA with the
   PR's current head (the last `/pull/N/commits/<sha>` link in the timeline) and flags stale
-  results. The panel is only injected when the repo is connected (or allowlisted).
+  results. The panel is only injected when an API token is set and the repo is connected (or
+  allowlisted).
 - The PR panel and the recent-PR list link to the test workflow executions of a run and to the
   AI analysis chat. Nothing links to the repository's integration page in the dashboard (the
   extension surfaces results, not integration management); the only dashboard entry points are
@@ -195,6 +199,7 @@ The dashboard base URL is used to construct links into Testkube:
 - **Workflow in a popover** → most recent execution details:
   `…/dashboard/executions/{executionId}`. If a workflow has no runs yet, it falls back to the
   workflow's Executions tab: `…/dashboard/test-workflows/{name}/executions`.
+- **Run history strip** → the workflow's Executions tab: `…/dashboard/test-workflows/{name}/executions`.
 
 ## Matching logic
 
@@ -244,7 +249,7 @@ Activity is **hybrid**:
 `manual = repoMatchesPatterns(ref, repoFilters)` (an empty list matches nothing). It shows the
 loading placeholder only for `manual` repos (known active up front); other repos are queried
 silently and only render if the response has matches. After the response it renders when
-`hasMatches || manual`, otherwise removes the widget. `repoMatchesPatterns` (in
+`hasMatches || connected || manual`, otherwise removes the widget. `repoMatchesPatterns` (in
 [`src/lib/match.ts`](src/lib/match.ts)) matches case-insensitively against the full `owner/repo`,
 treating `*` as any run of characters and `?` as a single character (all other regex metacharacters
 are escaped). Changes to the setting are applied live via the `chrome.storage.onChanged` listener.
@@ -265,8 +270,9 @@ Notes:
 
 Both are keyed by a signature of the API base URL + token and expire after a few minutes
 (`CACHE_TTL_MS`). The per-environment scan loads the cache once, mutates it in memory during the
-bounded-concurrency scan, and writes it back once to avoid read-modify-write races. Latest execution
-status/ids are always fetched fresh. Manual refresh and auto-refresh pass a `force` flag that
+bounded-concurrency scan, and writes it back once to avoid read-modify-write races. Recent
+executions (status, time, history) are always fetched fresh. GitHub App capability and repository
+lookups are cached the same way (`githubAppCache`). Manual refresh and auto-refresh pass a `force` flag that
 bypasses both caches.
 
 ## Configuration knobs
@@ -309,7 +315,8 @@ src/
   options/                       React options page
   lib/
     testkube.ts         REST client (orgs, environments, workflows, executions, GitHub App)
-    time.ts             relative-time formatting
+    bot.ts              Testkube Bot installation links and the install-permission check
+    time.ts             relative and absolute time formatting
     match.ts            URL normalization + repo matching
     permissions.ts      runtime host permission for custom control planes
     storage.ts          settings (sync + local)
@@ -325,7 +332,7 @@ Endpoints used (all with `Authorization: Bearer <token>`), relative to the API b
 - `GET /organizations`
 - `GET /organizations/{org}/environments`
 - `GET /organizations/{org}/environments/{env}/agent/test-workflows`
-- `GET /organizations/{org}/environments/{env}/agent/test-workflows/{name}/executions`
+- `GET /organizations/{org}/environments/{env}/agent/test-workflows/{name}/executions?pageSize=10`
 
 GitHub App integration (only when enabled; the environment `read` role suffices):
 

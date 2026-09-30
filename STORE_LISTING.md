@@ -29,16 +29,17 @@ Requires a Testkube Control Plane (Cloud or on-prem) and an API token for it. Se
 https://testkube.io/get-started to get a Control Plane.
 
 On repository pages, the Testkube Results section in the sidebar shows how many workflows ran, their
-latest status (passed, failed, aborted, cancelled, running), and deep links into the Testkube
-dashboard. Hover a status to see the workflows behind it and jump straight to their most recent
-execution.
+latest status (passed, failed, aborted, cancelled, running) with when each last ran, and deep links
+into the Testkube dashboard. Hover a status to see the workflows behind it, newest first, each with
+a strip of its last 10 runs, and jump straight to their most recent execution.
 
 For repositories connected through the Testkube GitHub App, the sidebar also shows the connection
 status and recent pull request runs, and the pull request conversation tab gets a
 Testkube panel with the latest run for that PR: overall status, the commit it ran for (flagged when
 the PR has moved on), one row per workflow execution, quality gates, and a link to the AI analysis
-when one was performed. Repositories that are not connected yet get a one-click link to connect
-them. The GitHub App features require the Testkube GitHub App to be enabled on your Control Plane
+when one was performed. Repositories that are not connected yet get a one-click link to install
+the Testkube Bot (opening the installation for that repository when you may install it there) or,
+when it is already installed, to connect them. The GitHub App features require the Testkube GitHub App to be enabled on your Control Plane
 and an API token with access to its integration endpoints; otherwise the extension shows workflow
 results only.
 
@@ -49,7 +50,8 @@ on-prem Control Planes by entering your own API and dashboard URLs.
 Features
 
 - Testkube Results sidebar section on repository pages, styled like GitHub's own sections
-- Per-status hover popovers with links to the latest execution of each workflow
+- Per-status hover popovers with links to the latest execution of each workflow, when it ran, and
+  its last 10 runs
 - Environment switcher when results span several Testkube environments
 - Pull request panel with the latest GitHub App run, its test executions, and quality gates
 - Recent pull request runs on the repository page
@@ -58,8 +60,8 @@ Features
 
 Privacy
 
-The extension talks only to the Testkube Control Plane you configure. Your API token stays in your
-browser. No analytics, no third parties.
+The extension sends data only to the Testkube Control Plane you configure. Your API token stays in
+your browser. No analytics, no third parties.
 
 ## Single purpose
 
@@ -71,7 +73,7 @@ Show Testkube test results on GitHub repository and pull request pages.
 | --- | --- |
 | `storage` | Stores the user's Testkube API token and settings, and caches control-plane responses for a few minutes. |
 | Host `https://api.testkube.io/*` | Calls the Testkube Cloud API to read organizations, environments, test workflows, executions, and GitHub App integration state for the repository or pull request being viewed. |
-| Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit from the page) to select which results to show, and injects the Testkube Results section into the sidebar. Only the repository name is sent to the configured Testkube host. |
+| Content script on `https://github.com/*` | Reads the repository name and pull request number from the page URL (and the PR's head commit from the page) to select which results to show, and injects the Testkube Results section into the sidebar. Reads the repository's and owner's numeric ids from the page metadata to build the Testkube Bot installation link, and checks with a same-origin request to github.com whether the signed-in user may open that installation directly. Only the repository name is sent to the configured Testkube host. |
 | Optional hosts `https://*/*`, `http://*/*` | Users running an on-prem Testkube Control Plane enter their own API URL. Access to that single origin is requested at runtime, only when the user saves such a URL, and is used solely for the same Testkube API calls. No host is accessed without an explicit grant. |
 
 ## Data usage disclosure
@@ -79,7 +81,8 @@ Show Testkube test results on GitHub repository and pull request pages.
 - **Data collected:** Authentication information (the user's Testkube API token, entered by the
   user). Website content: the repository name (`owner/repo`) of the GitHub page being viewed, sent
   to the user's Testkube control plane as a query parameter. The pull request number is used only
-  locally to select results.
+  locally to select results. The repository's and owner's numeric GitHub ids are used only locally,
+  in the Testkube Bot installation link and a status-only check of that link on github.com.
 - **Not collected:** personal communications, financial or payment information, health
   information, location, web history, user activity, personally identifiable information.
 - **Certifications:** data is not sold to third parties; not used or transferred for purposes
