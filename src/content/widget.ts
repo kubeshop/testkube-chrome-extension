@@ -1,4 +1,4 @@
-import {TESTKUBE_BOT_MARKETPLACE_URL, readRepoIdsFromPage, testkubeBotInstallUrl} from '../lib/bot';
+import {TESTKUBE_BOT_MARKETPLACE_URL, canOpen, readRepoIdsFromPage, testkubeBotInstallUrls} from '../lib/bot';
 import {log} from '../lib/log';
 import {parseGithubRepoFromPath} from '../lib/match';
 import type {
@@ -249,14 +249,23 @@ const NOT_CONNECTED_TEXT = 'This repository is not connected to Testkube through
 export function buildInstallBotLink(): HTMLAnchorElement {
   const ref = parseGithubRepoFromPath(location.pathname);
   const ids = ref ? readRepoIdsFromPage(document, `${ref.owner}/${ref.repo}`) : undefined;
-  const url = testkubeBotInstallUrl(ids);
-  const link = externalLink(url, 'Install Testkube Bot \u2192');
+  const urls = testkubeBotInstallUrls(ids);
+  const link = externalLink(urls.fallback, 'Install Testkube Bot \u2192');
   link.title =
-    url === TESTKUBE_BOT_MARKETPLACE_URL
+    urls.fallback === TESTKUBE_BOT_MARKETPLACE_URL
       ? 'Install the Testkube Bot GitHub App from the GitHub Marketplace'
-      : ids
-        ? 'Install the Testkube Bot GitHub App on this repository'
-        : 'Install the Testkube Bot GitHub App';
+      : 'Install the Testkube Bot GitHub App';
+  // Upgrade to the direct installation for this repository once GitHub
+  // confirms the signed-in user may install apps on its owner; otherwise the
+  // account picker stays (the direct page would be a 404 for them).
+  const direct = urls.direct;
+  if (direct) {
+    void canOpen(direct).then(ok => {
+      if (!ok) return;
+      link.href = direct;
+      link.title = 'Install the Testkube Bot GitHub App on this repository';
+    });
+  }
   return link;
 }
 
