@@ -1,6 +1,6 @@
 # Privacy Policy — Testkube for GitHub
 
-_Last updated: 2026-09-30_
+_Last updated: 2026-10-01_
 
 **Testkube for GitHub** is a browser extension that shows Testkube test results on GitHub
 repository and pull request pages. This policy describes what data the extension handles and
@@ -25,9 +25,9 @@ where it goes.
 - The extension sends requests **only to the Testkube control plane you configure** (by default
   `https://api.testkube.io`). Each request carries your API token so Testkube can authorize it.
 - The requests include the GitHub repository name (`owner/repo`) of the page you are viewing, so
-  Testkube can return the matching workflows and connection state. On pull request pages the
-  extension downloads the repository's recent integration events from Testkube and selects the
-  ones for the pull request you are viewing locally; the pull request number itself is not sent.
+  Testkube can return the matching workflows and connection state. On pull request pages they also
+  include the number of the pull request you are viewing, so Testkube can return that pull
+  request's runs.
 - When it shows the **Install Testkube Bot** link, the extension also sends one request to
   `github.com` itself, for the Testkube Bot's installation page for the repository you are viewing.
   Your browser sends it with your existing GitHub session, like any GitHub page you open. The
@@ -40,9 +40,11 @@ where it goes.
 ## What the extension reads from GitHub pages
 
 The extension runs on `github.com` pages to read the repository name and pull request number from
-the page URL, the pull request's current head commit from the page, and the numeric ids of the
-repository and its owner from the page's metadata, in order to look up and display matching results
-and to build the Testkube Bot installation link. The ids are only used in that link. It does not
+the page URL, the pull request's current head commit and the time it was opened from the page, and
+the numeric ids of the repository and its owner from the page's metadata, in order to look up and
+display matching results and to build the Testkube Bot installation link. The opening time only
+limits how far back the extension looks for the pull request's runs, and the ids are only used in
+that link. It does not
 read or transmit any other page content, and it does not read your GitHub credentials.
 
 ## Optional host access

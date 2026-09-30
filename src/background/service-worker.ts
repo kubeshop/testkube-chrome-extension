@@ -48,8 +48,10 @@ const GITHUB_CACHE_KEY = 'githubAppCache';
 // How many recent PR runs the repo sidebar lists, and how many event pages the
 // PR panel is willing to page through looking for a specific PR.
 const RECENT_PR_LIMIT = 5;
-const EVENTS_PAGE_SIZE = 50;
-const MAX_EVENT_PAGES = 3;
+// The events API's maximum page size, and how many pages the PR panel reads
+// at most when the control plane cannot filter by pull request.
+const EVENTS_PAGE_SIZE = 100;
+const MAX_EVENT_PAGES = 10;
 
 // A custom control plane the user has not granted host access to yet: fail
 // with a message that points at the fix instead of a bare "Failed to fetch".
@@ -574,29 +576,47 @@ async function handleGetMatches(owner: string, repo: string, force: boolean): Pr
 
 // The newest event for a PR in an environment, paging through the repo's
 // event log (newest first) up to a small bound.
+// Whether an event produced a run the panel can show.
+function hasRun(event: GithubRepositoryIntegrationEvent): boolean {
+  return Boolean(event.executionId) || (event.children?.length ?? 0) > 0;
+}
+
+// The pull request's latest run: its newest event that has one, else its
+// newest event. The request asks the control plane to filter by pull request
+// (issueNumber); control planes without that filter return the whole
+// repository log, newest first, so this pages back until it finds a run,
+// reaches events older than the pull request itself, or hits the page cap.
 async function findPullRequestEvent(
   s: Settings,
   orgId: string,
   envId: string,
   repositoryId: string,
-  number: number
+  number: number,
+  openedAt?: string
 ): Promise<GithubRepositoryIntegrationEvent | undefined> {
+  const openedMs = openedAt ? Date.parse(openedAt) : Number.NaN;
+  const newestFirst = (a: GithubRepositoryIntegrationEvent, b: GithubRepositoryIntegrationEvent): number =>
+    (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+  const found: GithubRepositoryIntegrationEvent[] = [];
   for (let page = 1; page <= MAX_EVENT_PAGES; page += 1) {
-    const list = await listGithubIntegrationEvents(s, orgId, envId, repositoryId, page, EVENTS_PAGE_SIZE);
-    const events = (list.events ?? []).filter(e => isPullRequestEvent(e) && e.issueNumber === number);
-    if (events.length > 0) {
-      return events.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0];
-    }
-    if (!list.hasMore) break;
+    const list = await listGithubIntegrationEvents(s, orgId, envId, repositoryId, page, EVENTS_PAGE_SIZE, number);
+    const events = list.events ?? [];
+    found.push(...events.filter(e => isPullRequestEvent(e) && e.issueNumber === number));
+    if (found.some(hasRun) || !list.hasMore) break;
+    // Nothing older than the pull request can belong to it.
+    const oldest = events.reduce((min, e) => Math.min(min, Date.parse(e.createdAt ?? '')), Number.POSITIVE_INFINITY);
+    if (!Number.isNaN(openedMs) && oldest < openedMs) break;
   }
-  return undefined;
+  found.sort(newestFirst);
+  return found.find(hasRun) ?? found[0];
 }
 
 async function handleGetPullRequest(
   owner: string,
   repo: string,
   number: number,
-  force: boolean
+  force: boolean,
+  openedAt?: string
 ): Promise<PullRequestResponse> {
   const settings = await getSettings();
   const base: PullRequestResponse = {
@@ -648,7 +668,7 @@ async function handleGetPullRequest(
     await mapWithConcurrency(connectedEnvs, ENV_CONCURRENCY, async env => {
       let event: GithubRepositoryIntegrationEvent | undefined;
       try {
-        event = await findPullRequestEvent(settings, orgId, env.id, repositoryId, number);
+        event = await findPullRequestEvent(settings, orgId, env.id, repositoryId, number, openedAt);
       } catch (err) {
         warn(`PR #${number} event lookup failed in env "${env.name}":`, err);
         return;
@@ -726,7 +746,7 @@ chrome.runtime.onMessage.addListener((request: RuntimeRequest, _sender, sendResp
         request.force ? ' (force)' : ''
       }`
     );
-    handleGetPullRequest(request.owner, request.repo, request.number, Boolean(request.force))
+    handleGetPullRequest(request.owner, request.repo, request.number, Boolean(request.force), request.openedAt)
       .then(res => {
         log('GET_PULL_REQUEST response:', res);
         sendResponse(res);

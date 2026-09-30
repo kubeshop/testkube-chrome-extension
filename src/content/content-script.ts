@@ -70,6 +70,17 @@ function readPageHeadSha(ref: RepoRef, number: number): string | undefined {
   return sha;
 }
 
+// When the pull request was opened: the earliest timestamp on its page (the
+// opening post is always rendered first). Undefined if none is found.
+function readPageOpenedAt(): string | undefined {
+  let earliest: string | undefined;
+  for (const el of document.querySelectorAll<HTMLElement>('relative-time[datetime]')) {
+    const dt = el.getAttribute('datetime') ?? '';
+    if (!Number.isNaN(Date.parse(dt)) && (!earliest || Date.parse(dt) < Date.parse(earliest))) earliest = dt;
+  }
+  return earliest;
+}
+
 // ---- Repo panel ---------------------------------------------------------------
 
 async function updateRepo(ref: RepoRef, force: boolean): Promise<void> {
@@ -168,6 +179,7 @@ async function updatePullRequest(ref: RepoRef, number: number, force: boolean): 
     owner: ref.owner,
     repo: ref.repo,
     number,
+    openedAt: readPageOpenedAt(),
     force,
   };
   const epoch = settingsEpoch;

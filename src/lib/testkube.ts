@@ -229,14 +229,18 @@ export async function listGithubIntegrationEvents(
   environmentId: string,
   repositoryId: string,
   page = 1,
-  perPage = 50
+  perPage = 50,
+  // Only this pull request's events. Control planes without the filter ignore
+  // the parameter and return all events, so callers still filter themselves.
+  issueNumber?: number
 ): Promise<GithubRepositoryIntegrationEventList> {
+  const issue = issueNumber ? `&issueNumber=${issueNumber}` : '';
   const data = await apiGet<GithubRepositoryIntegrationEventList>(
     s,
     envPath(
       orgId,
       environmentId,
-      `/integrations/github/repositories/${encodeURIComponent(repositoryId)}/events?page=${page}&perPage=${perPage}`
+      `/integrations/github/repositories/${encodeURIComponent(repositoryId)}/events?page=${page}&perPage=${perPage}${issue}`
     )
   );
   return data ?? {};
